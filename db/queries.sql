@@ -20,41 +20,77 @@ ORDER BY t.trade_date DESC, t.instrument_id, t.created_at;
 
 
 -- ============================================================================
--- TICKET-ADV011 — Recursive CTE: trade lifecycle (execution -> settlement
---                -> recon_break -> resolution)
+-- TICKET-ADV011 — Recursive CTE: trade lifecycle rollup (5 stages)
 -- ============================================================================
 WITH RECURSIVE trade_lifecycle AS (
-    -- anchor: every trade in its execution state
+    -- Base case: every trade starts as stage 1 (EXECUTION)
     SELECT
-        t.id           AS trade_id,
+        t.id                                    AS trade_id,
         t.trade_ref,
-        1              AS step,
-        'EXECUTED'     AS state,
-        t.created_at   AS at_ts,
-        NULL::text     AS detail
+        1                                       AS stage,
+        'EXECUTION'::VARCHAR(30)                AS stage_name,
+        t.created_at                            AS event_at,
+        t.status::VARCHAR(30)                   AS event_status
     FROM trades t
     WHERE t.deleted_at IS NULL
 
     UNION ALL
 
-    -- recursive: each subsequent state derived from the previous step
+    -- Recursive step: JOIN LATERAL evaluates the next stage based on current stage
     SELECT
         tl.trade_id,
         tl.trade_ref,
-        tl.step + 1,
-        CASE tl.step
-            WHEN 1 THEN 'CONFIRMED'
-            WHEN 2 THEN 'SETTLED'
-            WHEN 3 THEN 'RECONCILED'
-        END                                          AS state,
-        s.settlement_date::timestamp                  AS at_ts,
-        s.status                                      AS detail
+        tl.stage + 1                           AS stage,
+        next_event.stage_name,
+        next_event.event_at,
+        next_event.event_status
     FROM trade_lifecycle tl
-    JOIN settlements s ON s.trade_id = tl.trade_id
-    WHERE tl.step < 4
+    JOIN LATERAL (
+        -- Stage 1 -> Stage 2: CONFIRMATION
+        SELECT
+            'CONFIRMATION'::VARCHAR(30)         AS stage_name,
+            tl.event_at                         AS event_at,
+            'CONFIRMED'::VARCHAR(30)            AS event_status
+        WHERE tl.stage = 1
+
+        UNION ALL
+
+        -- Stage 2 -> Stage 3: SETTLEMENT
+        SELECT
+            'SETTLEMENT'::VARCHAR(30)           AS stage_name,
+            s.settlement_date::timestamp         AS event_at,
+            s.status::VARCHAR(30)               AS event_status
+        FROM settlements s
+        WHERE tl.stage = 2
+          AND s.trade_id = tl.trade_id
+
+        UNION ALL
+
+        -- Stage 3 -> Stage 4: RECON_BREAK
+        SELECT
+            'RECON_BREAK'::VARCHAR(30)          AS stage_name,
+            rb.detected_at                      AS event_at,
+            rb.status::VARCHAR(30)              AS event_status
+        FROM recon_breaks rb
+        WHERE tl.stage = 3
+          AND rb.trade_id = tl.trade_id
+
+        UNION ALL
+
+        -- Stage 4 -> Stage 5: RESOLUTION
+        SELECT
+            'RESOLUTION'::VARCHAR(30)           AS stage_name,
+            rb.resolved_at                      AS event_at,
+            rb.status::VARCHAR(30)              AS event_status
+        FROM recon_breaks rb
+        WHERE tl.stage = 4
+          AND rb.trade_id = tl.trade_id
+          AND rb.resolved_at IS NOT NULL
+    ) AS next_event ON TRUE
+    WHERE tl.stage < 5
 )
 SELECT * FROM trade_lifecycle
-ORDER BY trade_id, step;
+ORDER BY trade_id, stage;
 
 
 -- ============================================================================
