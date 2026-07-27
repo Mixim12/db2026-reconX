@@ -1,0 +1,116 @@
+# ---------------------------------------------------------------------------
+# ReconX — repository ignore rules
+#
+# Layout this covers:
+#   backend/          Java 25 + Maven (Spring Boot)
+#   frontend/         Vite + React + Vitest
+#   static-dashboard/ plain HTML/CSS/JS
+#   monitoring/       Prometheus + Grafana provisioning
+#   db/               SQL scripts
+# ---------------------------------------------------------------------------
+
+# --- OS cruft --------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# --- Editors and IDEs ------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+*.swp
+*.swo
+*~
+
+# --- Java / Maven ----------------------------------------------------------
+target/
+*.class
+*.jar
+*.war
+*.ear
+# Keep the Maven wrapper itself committed — it pins the build for everyone.
+# Leading **/ matters: the wrapper lives at backend/.mvn/, not the repo root.
+!**/.mvn/wrapper/maven-wrapper.jar
+**/.mvn/timing.properties
+release.properties
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# --- Java tooling output ---------------------------------------------------
+hs_err_pid*
+replay_pid*
+*.hprof
+.attach_pid*
+
+# --- Node / frontend -------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+.eslintcache
+.npm
+.yarn/cache
+.yarn/install-state.gz
+.pnp.*
+
+# --- Test and coverage output ----------------------------------------------
+coverage/
+.nyc_output/
+*.lcov
+# JaCoCo writes into target/, already covered, but standalone runs land here:
+jacoco.exec
+jacoco-it.exec
+
+# --- Logs ------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Secrets and local config ----------------------------------------------
+# Never commit real credentials. Commit .env.example instead.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+secrets.yml
+secrets.yaml
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# --- Runtime data from docker-compose --------------------------------------
+# Bind-mounted volumes for Postgres, Kafka, Prometheus and Grafana land here.
+# Provisioning config under monitoring/ stays tracked.
+pgdata/
+kafka-data/
+zookeeper-data/
+monitoring/grafana/data/
+monitoring/prometheus/data/
+
+# --- Misc ------------------------------------------------------------------
+tmp/
+temp/
+*.bak
+*.orig
+*.rej
