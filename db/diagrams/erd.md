@@ -1,3 +1,5 @@
+# TICKET-ADV006 — ER model (8 entities)
+
 ```mermaid
 erDiagram
     COUNTERPARTIES ||--o{ TRADES : "executes"
