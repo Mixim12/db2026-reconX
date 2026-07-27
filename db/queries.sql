@@ -64,3 +64,33 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;
 SELECT id, symbol, metadata
 FROM instruments
 WHERE metadata @> '{"sector":"Banking"}'::jsonb;
+
+
+-- ============================================================================
+-- TICKET-ADV008 — mv_daily_recon_summary: daily recon aggregate by
+--                 trade_date / region / asset_class (prototyping only —
+--                 the versioned copy lives in Liquibase changeset
+--                 011-mv-daily-recon-summary.xml).
+-- ============================================================================
+SELECT
+    t.trade_date,
+    c.region,
+    t.asset_class,
+    COUNT(*)                                                        AS total_trades,
+    COUNT(*) FILTER (WHERE t.status = 'MATCHED')                    AS matched_trades,
+    COUNT(*) FILTER (WHERE rb.status = 'OPEN')                      AS open_breaks,
+    ROUND(SUM(t.quantity * t.price)::NUMERIC, 2)                    AS gross_notional,
+    ROUND(
+        100.0 * COUNT(*) FILTER (WHERE t.status = 'MATCHED')
+            / NULLIF(COUNT(*), 0),
+        2
+    )                                                                AS match_rate_pct
+FROM trades t
+JOIN counterparties c ON c.id = t.counterparty_id
+JOIN instruments i ON i.id = t.instrument_id
+LEFT JOIN recon_breaks rb ON rb.trade_id = t.id
+WHERE t.deleted_at IS NULL
+GROUP BY t.trade_date, c.region, t.asset_class;
+
+-- Refresh without blocking dashboard reads (requires the unique index below):
+REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;

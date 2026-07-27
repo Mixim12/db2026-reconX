@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ============================================================================
+ TICKET-ADV008 — mv_daily_recon_summary: richer daily recon aggregate
+ WHAT:    Replaces the trade_date-only matview from 005-mat-views.xml with an
+          aggregate grouped by trade_date / region / asset_class, joining
+          trades + counterparties + instruments + recon_breaks. Feeds the
+          Day-6 Grafana dashboards (ADV087-ADV092).
+ HOW:     <sql> changeset (not <createView>, since Liquibase's createView
+          maps to a regular view and can't express WITH NO DATA or the
+          concurrent-refresh unique index). Built WITH NO DATA so creation
+          is instant; first REFRESH populates it.
+ WHY:     REFRESH MATERIALIZED VIEW CONCURRENTLY needs a UNIQUE INDEX over
+          all grouping columns, otherwise Postgres refuses with
+          "cannot refresh materialized view concurrently without a unique
+          index". Concurrent refresh means the EOD batch never blocks
+          dashboard reads.
+ OBSERVE: \d+ mv_daily_recon_summary shows total_trades, matched_trades,
+          open_breaks, gross_notional, match_rate_pct.
+          REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_recon_summary;
+          succeeds because of uq_mv_daily_recon_summary.
+ ============================================================================
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="011-mv-daily-recon-summary" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;
+
+            CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
+            SELECT
+                t.trade_date,
+                c.region,
+                t.asset_class,
+                COUNT(*)                                                     AS total_trades,
+                COUNT(*) FILTER (WHERE t.status = 'MATCHED')                 AS matched_trades,
+                COUNT(*) FILTER (WHERE rb.status = 'OPEN')                   AS open_breaks,
+                ROUND(SUM(t.quantity * t.price)::NUMERIC, 2)                 AS gross_notional,
+                ROUND(
+                    100.0 * COUNT(*) FILTER (WHERE t.status = 'MATCHED')
+                        / NULLIF(COUNT(*), 0),
+                    2
+                )                                                             AS match_rate_pct
+            FROM trades t
+            JOIN counterparties c ON c.id = t.counterparty_id
+            JOIN instruments i ON i.id = t.instrument_id
+            LEFT JOIN recon_breaks rb ON rb.trade_id = t.id
+            WHERE t.deleted_at IS NULL
+            GROUP BY t.trade_date, c.region, t.asset_class
+            WITH NO DATA;
+
+            CREATE UNIQUE INDEX uq_mv_daily_recon_summary
+                ON mv_daily_recon_summary (trade_date, region, asset_class);
+        ]]></sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
