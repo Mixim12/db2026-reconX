@@ -49,11 +49,38 @@
             <column name="resolved_at" type="TIMESTAMP"/>
             <column name="resolution_note" type="VARCHAR(500)"/>
         </createTable>
+        <rollback>
+            <dropTable tableName="recon_breaks"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ADV007 made trades a RANGE-partitioned parent on Postgres, so a plain
+         single-column FK to trades(id) is no longer valid there (Postgres
+         requires unique constraints on partitioned tables to include the
+         partition key). Keep the real FK on H2 (trades stays unpartitioned
+         there); on Postgres fall back to a plain index for lookup speed and
+         push referential integrity to the app layer. -->
+    <changeSet id="006-recon-breaks-fk-h2" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="h2"/>
+        </preConditions>
         <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id"
                                  constraintName="fk_recon_breaks_trade"
                                  referencedTableName="trades" referencedColumnNames="id"/>
         <rollback>
-            <dropTable tableName="recon_breaks"/>
+            <dropForeignKeyConstraint baseTableName="recon_breaks" constraintName="fk_recon_breaks_trade"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-recon-breaks-trade-index-postgres" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+        </preConditions>
+        <createIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id">
+            <column name="trade_id"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id"/>
         </rollback>
     </changeSet>
 
