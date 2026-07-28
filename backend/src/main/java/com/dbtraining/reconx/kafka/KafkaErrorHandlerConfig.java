@@ -1,6 +1,13 @@
 package com.dbtraining.reconx.kafka;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * ============================================================================
@@ -41,5 +48,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KafkaErrorHandlerConfig {
 
-    // TODO(TICKET-ADV134 + ADV135): define the errorHandler @Bean — see comments above.
+    @Bean
+    public DefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> template) {
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+                template,
+                (ConsumerRecord<?, ?> rec, Exception ex) ->
+                        new TopicPartition(rec.topic() + "-dlq", rec.partition()));
+        ExponentialBackOff backoff = new ExponentialBackOff(1000L, 2.0);
+        // TICKET-ADV135: the criterion is a total time budget (~8s), not an
+        // attempt count. setMaxAttempts(3) compiles fine (it exists on
+        // ExponentialBackOff in Spring 6.2) but caps by *count*, not time -
+        // CI wouldn't catch the difference either way. 1s+2s+4s = 7s < 8s,
+        // so this still yields 3 retries in practice.
+        backoff.setMaxElapsedTime(8000L);
+        return new DefaultErrorHandler(recoverer, backoff);
+    }
 }
