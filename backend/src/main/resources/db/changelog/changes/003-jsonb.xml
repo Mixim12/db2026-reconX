@@ -26,8 +26,12 @@
         <sql>CREATE INDEX idx_instruments_metadata_gin ON instruments USING GIN (metadata jsonb_path_ops);</sql>
         <rollback>
             <sql>DROP INDEX IF EXISTS idx_instruments_metadata_gin;</sql>
-            <sql>ALTER TABLE instruments DROP COLUMN metadata;</sql>
+            <sql>ALTER TABLE instruments DROP COLUMN IF EXISTS metadata;</sql>
         </rollback>
+    </changeSet>
+
+    <changeSet id="tag-release-1-1" author="trainer">
+        <tagDatabase tag="release-1.1"/>
     </changeSet>
 
 </databaseChangeLog>
