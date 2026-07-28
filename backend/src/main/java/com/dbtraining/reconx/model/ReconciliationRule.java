@@ -53,9 +53,11 @@ public enum ReconciliationRule {
      * the same amount yields the same answer.
      *
      * <p>Zero-price guard: when {@code internalPrice} is zero there is no
-     * meaningful denominator, so the price drift is defined as zero rather
-     * than raising {@link ArithmeticException}. Such a pair is then decided
-     * purely by its quantity leg.
+     * meaningful denominator, so no division is attempted and no
+     * {@link ArithmeticException} is raised. Equal prices are always within
+     * tolerance, so a zero/zero pair still passes its price leg; a zero
+     * internal price against a non-zero external price never does. Calling
+     * that drift "zero" would silently reconcile a real price break.
      *
      * <p>All numeric comparisons go through {@link BigDecimal#compareTo},
      * never {@code equals}, so {@code 100.00} and {@code 100.0} are treated
@@ -66,22 +68,26 @@ public enum ReconciliationRule {
      */
     public boolean matches(BigDecimal internalPrice, BigDecimal internalQty,
                            BigDecimal externalPrice, BigDecimal externalQty) {
-        BigDecimal priceDrift = priceDrift(internalPrice, externalPrice);
-        BigDecimal qtyDrift   = externalQty.subtract(internalQty).abs();
+        BigDecimal qtyDrift = externalQty.subtract(internalQty).abs();
 
-        return priceDrift.compareTo(priceTolerancePct) <= 0
+        return priceWithinTolerance(internalPrice, externalPrice)
                 && qtyDrift.compareTo(qtyToleranceAbs) <= 0;
     }
 
     /**
-     * Absolute price difference as a fraction of the internal price, or zero
-     * when the internal price is zero (see the zero-price guard above).
+     * Whether the price leg is within this rule's percentage tolerance.
+     * Identical prices always pass; a non-zero difference off a zero internal
+     * price never does, because the percentage is undefined there.
      */
-    private static BigDecimal priceDrift(BigDecimal internalPrice, BigDecimal externalPrice) {
-        if (internalPrice.signum() == 0) {
-            return BigDecimal.ZERO;
+    private boolean priceWithinTolerance(BigDecimal internalPrice, BigDecimal externalPrice) {
+        BigDecimal priceDiff = externalPrice.subtract(internalPrice).abs();
+        if (priceDiff.signum() == 0) {
+            return true;
         }
-        return externalPrice.subtract(internalPrice).abs()
-                .divide(internalPrice.abs(), DRIFT_SCALE, RoundingMode.HALF_UP);
+        if (internalPrice.signum() == 0) {
+            return false;
+        }
+        BigDecimal priceDrift = priceDiff.divide(internalPrice.abs(), DRIFT_SCALE, RoundingMode.HALF_UP);
+        return priceDrift.compareTo(priceTolerancePct) <= 0;
     }
 }

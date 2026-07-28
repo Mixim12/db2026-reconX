@@ -190,15 +190,19 @@ class ReconciliationRuleTest {
     }
 
     @Test
-    @DisplayName("AC6: zero internal price means zero price drift, so an identical pair matches")
-    void zeroInternalPriceIsTreatedAsZeroDrift() {
+    @DisplayName("AC6: a zero internal price matches only against a zero external price")
+    void zeroInternalPriceMatchesOnlyAnEqualPrice() {
         assertThat(ReconciliationRule.EXACT.matches(
                 BigDecimal.ZERO, TEN_UNITS, BigDecimal.ZERO, TEN_UNITS)).isTrue();
 
-        // Documented semantics: with a zero internal price the price drift is
-        // defined as zero, so only the quantity leg can still reject the pair.
+        // Documented semantics: a percentage drift off a zero base is undefined,
+        // so a non-zero external price can never be within a percentage tolerance.
+        // Reporting it as a match would silently reconcile a real price break.
         assertThat(ReconciliationRule.EXACT.matches(
-                BigDecimal.ZERO, TEN_UNITS, new BigDecimal("42.00"), TEN_UNITS)).isTrue();
+                BigDecimal.ZERO, TEN_UNITS, new BigDecimal("42.00"), TEN_UNITS)).isFalse();
+        assertThat(ReconciliationRule.LOOSE.matches(
+                BigDecimal.ZERO, TEN_UNITS, new BigDecimal("0.01"), TEN_UNITS)).isFalse();
+
         assertThat(ReconciliationRule.EXACT.matches(
                 BigDecimal.ZERO, TEN_UNITS, BigDecimal.ZERO, new BigDecimal("11"))).isFalse();
     }
