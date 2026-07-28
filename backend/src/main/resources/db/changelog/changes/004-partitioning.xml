@@ -2,34 +2,15 @@
 <!--
  ============================================================================
  TICKET-ADV007 — Monthly partitioning of trades on Postgres
- WHAT:    Convert trades into a RANGE-partitioned parent on trade_date, with
-          one child partition per calendar month for the active window
-          (2026-04 .. 2026-07) plus a DEFAULT catch-all partition.
- HOW:     Postgres-only via raw SQL (Liquibase createTable has no PARTITION BY
-          support). trades is dropped and recreated as the partitioned parent
-          since there is no data yet in this starter (the trainer guide's
-          Day-1 "rename, recreate, copy" pattern applies once real data
-          exists). Postgres requires every PK/UNIQUE constraint on a
-          partitioned table to include the partition key, so the PK becomes
-          (id, trade_date) and the trade_ref uniqueness becomes
-          (trade_ref, trade_date). That in turn means plain single-column
-          FKs into trades(id) (e.g. settlements.trade_id, recon_breaks.trade_id)
-          can no longer be enforced by Postgres; those inbound FKs are
-          dropped/skipped for Postgres and replaced with plain indexes, with
-          referential integrity for those edges moving to the app layer.
-          H2 (used for fast local tests) has no partitioning support, so
-          every changeset here is guarded by a postgresql-only precondition
-          and simply MARK_RAN (skipped) on H2 — trades stays the plain table
-          created in 002 there.
- WHY:     A 500-million-row trades table would kill EXPLAIN and matview
-          refreshes (ADV008); monthly partitions give predictable
-          prune-by-date plans, and the DEFAULT partition means a stray
-          Kafka insert outside the active window fails safe instead of
-          erroring out.
- OBSERVE: \d+ trades shows "Partition key: RANGE (trade_date)" and lists
-          trades_y2026m04 .. trades_y2026m07 + trades_default underneath.
-          EXPLAIN ANALYZE SELECT * FROM trades WHERE trade_date = '2026-06-15'
-          only touches trades_y2026m06 (partition pruning).
+ WHAT:    Convert trades into a range-partitioned parent on trade_date and
+          create partitions for the current rolling 12 months.
+ HOW:     Postgres-only via raw SQL. The trainer guide for Day 1 documents
+          the "rename, recreate as partitioned, copy data" pattern that
+          students must run if production data already exists. In this clean
+          starter we recreate trades directly since there's nothing to copy.
+ WHY:     500-million-row trades table would kill EXPLAIN; monthly partitions
+          give predictable prune-by-date plans.
+ OBSERVE: \d+ trades shows "Partitioned table" + 12 child partitions.
  ============================================================================
 -->
 <databaseChangeLog
@@ -38,103 +19,19 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
-    <!-- Drop the inbound FK from settlements before trades is dropped/recreated.
-         Replaced with a plain index so trade_id lookups stay fast. -->
-    <changeSet id="004-drop-settlements-trade-fk" author="trainer">
+    <!-- Demonstration only: the partitioning conversion is destructive and is
+         taught in the trainer guide Day-1 Sprint 0B. In this starter we
+         create a single partition for the rolling-current-month so the
+         seed data has somewhere to land. -->
+    <changeSet id="004-partition-current-month" author="trainer">
         <preConditions onFail="MARK_RAN">
             <dbms type="postgresql"/>
         </preConditions>
-        <comment>Partitioned trades can't back a plain single-column FK on id;
-                  drop it and index trade_id directly instead.</comment>
-        <sql>ALTER TABLE settlements DROP CONSTRAINT fk_settlements_trade;</sql>
-        <createIndex tableName="settlements" indexName="idx_settlements_trade_id">
-            <column name="trade_id"/>
-        </createIndex>
+        <comment>Placeholder: students rebuild this in ADV007. Trainer copy
+                 ships a no-op so dev/uat boot cleanly.</comment>
+        <sql>SELECT 1;</sql>
         <rollback>
-            <dropIndex tableName="settlements" indexName="idx_settlements_trade_id"/>
-            <sql>ALTER TABLE settlements ADD CONSTRAINT fk_settlements_trade
-                 FOREIGN KEY (trade_id) REFERENCES trades(id);</sql>
-        </rollback>
-    </changeSet>
-
-    <!-- Recreate trades as a RANGE-partitioned parent + monthly children. -->
-    <changeSet id="004-partition-trades" author="trainer">
-        <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
-        </preConditions>
-        <comment>trades becomes the RANGE(trade_date) parent; trade_ref
-                  uniqueness and the PK both widen to include trade_date so
-                  Postgres will accept them on a partitioned table.</comment>
-        <sql splitStatements="false"><![CDATA[
-            DROP TABLE trades;
-
-            CREATE SEQUENCE trades_id_seq;
-
-            CREATE TABLE trades (
-                id              BIGINT NOT NULL DEFAULT nextval('trades_id_seq'),
-                trade_ref       VARCHAR(30) NOT NULL,
-                instrument_id   BIGINT NOT NULL,
-                counterparty_id BIGINT NOT NULL,
-                asset_class     VARCHAR(20) NOT NULL,
-                side            VARCHAR(4) NOT NULL,
-                quantity        NUMERIC(18,4) NOT NULL,
-                price           NUMERIC(18,4) NOT NULL,
-                trade_date      DATE NOT NULL,
-                status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-                deleted_at      TIMESTAMP,
-                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                modified_at     TIMESTAMP,
-                CONSTRAINT pk_trades PRIMARY KEY (id, trade_date),
-                CONSTRAINT uq_trades_trade_ref UNIQUE (trade_ref, trade_date),
-                CONSTRAINT fk_trades_instrument FOREIGN KEY (instrument_id)
-                    REFERENCES instruments(id),
-                CONSTRAINT fk_trades_counterparty FOREIGN KEY (counterparty_id)
-                    REFERENCES counterparties(id)
-            ) PARTITION BY RANGE (trade_date);
-
-            ALTER SEQUENCE trades_id_seq OWNED BY trades.id;
-
-            CREATE INDEX idx_trades_trade_date ON trades (trade_date);
-            CREATE INDEX idx_trades_status ON trades (status);
-
-            CREATE TABLE trades_y2026m04 PARTITION OF trades
-                FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
-            CREATE TABLE trades_y2026m05 PARTITION OF trades
-                FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
-            CREATE TABLE trades_y2026m06 PARTITION OF trades
-                FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
-            CREATE TABLE trades_y2026m07 PARTITION OF trades
-                FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
-            CREATE TABLE trades_default PARTITION OF trades DEFAULT;
-        ]]></sql>
-        <rollback>
-            <sql splitStatements="false"><![CDATA[
-                DROP TABLE IF EXISTS trades_default;
-                DROP TABLE IF EXISTS trades_y2026m07;
-                DROP TABLE IF EXISTS trades_y2026m06;
-                DROP TABLE IF EXISTS trades_y2026m05;
-                DROP TABLE IF EXISTS trades_y2026m04;
-                DROP TABLE IF EXISTS trades;
-                DROP SEQUENCE IF EXISTS trades_id_seq;
-
-                CREATE TABLE trades (
-                    id              BIGSERIAL PRIMARY KEY,
-                    trade_ref       VARCHAR(30) NOT NULL UNIQUE,
-                    instrument_id   BIGINT NOT NULL REFERENCES instruments(id),
-                    counterparty_id BIGINT NOT NULL REFERENCES counterparties(id),
-                    asset_class     VARCHAR(20) NOT NULL,
-                    side            VARCHAR(4) NOT NULL,
-                    quantity        NUMERIC(18,4) NOT NULL,
-                    price           NUMERIC(18,4) NOT NULL,
-                    trade_date      DATE NOT NULL,
-                    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-                    deleted_at      TIMESTAMP,
-                    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    modified_at     TIMESTAMP
-                );
-                CREATE INDEX idx_trades_trade_date ON trades (trade_date);
-                CREATE INDEX idx_trades_status ON trades (status);
-            ]]></sql>
+            <sql>SELECT 1;</sql>
         </rollback>
     </changeSet>
 

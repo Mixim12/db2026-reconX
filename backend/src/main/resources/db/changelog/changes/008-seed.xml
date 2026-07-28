@@ -74,8 +74,4 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="tag-day1-baseline" author="trainer">
-        <tagDatabase tag="day1-baseline"/>
-    </changeSet>
-
 </databaseChangeLog>
