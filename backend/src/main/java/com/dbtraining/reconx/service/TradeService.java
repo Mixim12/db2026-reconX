@@ -108,12 +108,17 @@ public class TradeService {
                 TradeEvent.EventType.TRADE_CANCELLED, Instant.now(), actor, null, null));
     }
 
+    /**
+     * TICKET-ADV055 — filters via TradeRepository.findByFilters (JPQL, all
+     * params optional/null-safe). NOTE: the original design here called for
+     * ADV056's Specification-based approach (TradeSpecifications.hasStatus/
+     * tradeDateBetween/hasCounterparty), but that ticket is still an
+     * unimplemented stub with no owner. Wired against the already-complete
+     * ADV055 JPQL query instead so this endpoint isn't blocked waiting on it;
+     * revisit if/when ADV056 lands.
+     */
     @Transactional(readOnly = true)
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
-        // TODO(TICKET-ADV055 + TICKET-ADV056): combine the static helpers from
-        //   TradeSpecifications (hasStatus, tradeDateBetween, hasCounterparty)
-        //   via Specification.where(...).and(...) and call
-        //   tradeRepo.findAll(spec, pageable). Until JPA is in place, throw.
-        throw new UnsupportedOperationException("TICKET-ADV055");
+        return tradeRepo.findByFilters(from, to, status, counterpartyId, pageable);
     }
 }

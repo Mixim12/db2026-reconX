@@ -25,12 +25,15 @@ public interface TradeRepository
 
     @Query("""
         SELECT t FROM Trade t
-        WHERE t.tradeDate BETWEEN :from AND :to
+        WHERE (:from IS NULL OR t.tradeDate >= :from)
+          AND (:to IS NULL OR t.tradeDate <= :to)
           AND (:status IS NULL OR t.status = :status)
+          AND (:counterpartyId IS NULL OR t.counterparty.id = :counterpartyId)
         """)
     Page<Trade> findByFilters(@Param("from") LocalDate from,
                               @Param("to") LocalDate to,
                               @Param("status") String status,
+                              @Param("counterpartyId") Long counterpartyId,
                               Pageable pageable);
 
     long countByStatus(String status);
