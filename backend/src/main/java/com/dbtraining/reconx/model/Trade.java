@@ -9,8 +9,7 @@ import java.util.Objects;
  * Package-private by design: this class is an implementation detail
  * of the model package and is not part of the public API.
  */
-abstract sealed class Trade
-        permits EquityTrade, FXTrade, BondTrade, DerivativeTrade {
+abstract class Trade {
 
     private final TradeRef tradeRef;
     private final Money notional;

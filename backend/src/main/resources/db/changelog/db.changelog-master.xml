@@ -27,4 +27,8 @@
     <include file="changes/008-seed.xml"          relativeToChangelogFile="true"/>
     <include file="changes/011-mv-daily-recon-summary.xml" relativeToChangelogFile="true"/>
 
+    <changeSet id="day1-complete-tag" author="trainer">
+        <tagDatabase tag="day1-complete"/>
+    </changeSet>
+
 </databaseChangeLog>

@@ -26,8 +26,8 @@
             <column name="event_type" type="VARCHAR(30)"><constraints nullable="false"/></column>
             <column name="event_timestamp" type="TIMESTAMP"><constraints nullable="false"/></column>
             <column name="actor" type="VARCHAR(100)"/>
-            <column name="before_state" type="CLOB"/>
-            <column name="after_state" type="CLOB"/>
+            <column name="before_state" type="VARCHAR(10000)"/>
+            <column name="after_state" type="VARCHAR(10000)"/>
         </createTable>
         <createIndex tableName="audit_log" indexName="idx_audit_log_trade_ref">
             <column name="trade_ref"/>

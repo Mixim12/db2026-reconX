@@ -1,3 +1,6 @@
-com/dbtraining/reconx/model/ReconciliationRuleTest.class
-com/dbtraining/reconx/service/ReconciliationEngineTest.class
-com/dbtraining/reconx/model/EquityTradeTest.class
+com\dbtraining\reconx\model\ReconciliationRuleTest.class
+com\dbtraining\reconx\model\TradeRefTest.class
+com\dbtraining\reconx\exception\ReconExceptionTest.class
+com\dbtraining\reconx\model\MoneyTest.class
+com\dbtraining\reconx\service\ReconciliationEngineTest.class
+com\dbtraining\reconx\model\EquityTradeTest.class
