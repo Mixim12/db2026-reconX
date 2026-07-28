@@ -23,7 +23,7 @@ import java.util.Objects;
  * TICKET-ADV028 — equals/hashCode from tradeRef (Object methods on a regular class)
  * TICKET-ADV030 — toString() omits PII, prints reference/symbol/qty/price/side
  */
-public final class EquityTrade implements TradeType {
+public final class EquityTrade extends Trade implements TradeType {
 
     private final TradeRef tradeRef;
     private final String instrumentSymbol;
@@ -66,13 +66,14 @@ public final class EquityTrade implements TradeType {
     /** equals: two EquityTrades are equal iff their tradeRef is equal. */
     @Override
     public boolean equals(Object o) {
-        // TODO(TICKET-ADV028): pattern-match on EquityTrade and compare tradeRef.
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return this == o
+                || (o instanceof EquityTrade other
+                && tradeRef().equals(other.tradeRef()));
     }
 
-    @Override public int hashCode() {
-        // TODO(TICKET-ADV028): hash from tradeRef so it pairs with equals().
-        throw new UnsupportedOperationException("TICKET-ADV028");
+    @Override
+    public int hashCode() {
+        return tradeRef().hashCode();
     }
 
     @Override

@@ -20,14 +20,21 @@
 
     <changeSet id="003-jsonb-on-instruments" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <not><columnExists tableName="instruments" columnName="metadata"/></not>
+            </and>
         </preConditions>
         <sql>ALTER TABLE instruments ADD COLUMN metadata JSONB DEFAULT '{}'::JSONB NOT NULL;</sql>
         <sql>CREATE INDEX idx_instruments_metadata_gin ON instruments USING GIN (metadata jsonb_path_ops);</sql>
         <rollback>
             <sql>DROP INDEX IF EXISTS idx_instruments_metadata_gin;</sql>
-            <sql>ALTER TABLE instruments DROP COLUMN metadata;</sql>
+            <sql>ALTER TABLE instruments DROP COLUMN IF EXISTS metadata;</sql>
         </rollback>
+    </changeSet>
+
+    <changeSet id="tag-release-1-1" author="trainer">
+        <tagDatabase tag="release-1.1"/>
     </changeSet>
 
 </databaseChangeLog>

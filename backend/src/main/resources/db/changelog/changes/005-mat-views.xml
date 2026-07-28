@@ -19,7 +19,10 @@
 
     <changeSet id="005-mv-daily-recon-summary" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <not><viewExists viewName="mv_daily_recon_summary"/></not>
+            </and>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
             CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
@@ -39,6 +42,10 @@
         <rollback>
             <sql>DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;</sql>
         </rollback>
+    </changeSet>
+
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
     </changeSet>
 
 </databaseChangeLog>

@@ -17,6 +17,9 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="006-create-audit-log" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="audit_log"/></not>
+        </preConditions>
         <createTable tableName="audit_log">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
@@ -38,6 +41,9 @@
     </changeSet>
 
     <changeSet id="006-create-recon-breaks" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="recon_breaks"/></not>
+        </preConditions>
         <createTable tableName="recon_breaks">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
@@ -62,7 +68,10 @@
          push referential integrity to the app layer. -->
     <changeSet id="006-recon-breaks-fk-h2" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="h2"/>
+            <and>
+                <dbms type="h2"/>
+                <not><foreignKeyConstraintExists foreignKeyTableName="recon_breaks" foreignKeyConstraintName="fk_recon_breaks_trade"/></not>
+            </and>
         </preConditions>
         <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id"
                                  constraintName="fk_recon_breaks_trade"
@@ -74,7 +83,10 @@
 
     <changeSet id="006-recon-breaks-trade-index-postgres" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <not><indexExists indexName="idx_recon_breaks_trade_id"/></not>
+            </and>
         </preConditions>
         <createIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id">
             <column name="trade_id"/>
@@ -85,6 +97,9 @@
     </changeSet>
 
     <changeSet id="006-create-recon-jobs" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="recon_jobs"/></not>
+        </preConditions>
         <createTable tableName="recon_jobs">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
