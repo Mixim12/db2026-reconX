@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,10 +43,10 @@ public class ReconController {
     @GetMapping("/jobs/{jobId}/results")
     @Operation(summary = "Get results for a recon job")
     public List<ReconBreak> results(@PathVariable String jobId) {
-        // TODO(TICKET-ADV069): once recon_jobs + recon_breaks tables are wired,
-        //   return breaks.findByJobId(jobId). Day-0 returns an empty list so
-        //   the React breaks-table renders "no breaks" gracefully.
-        return Collections.emptyList();
+        // recon_jobs isn't wired up yet, so every job id currently surfaces
+        // all open breaks — narrow this to breaks.findByJobId(jobId) once
+        // ReconBreak carries a jobId column.
+        return breaks.findAll();
     }
 
     @PutMapping("/results/{id}/resolve")
