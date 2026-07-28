@@ -1,6 +1,9 @@
 package com.dbtraining.reconx.exception;
 
-/** 404 Not Found: the given {@code tradeRef} has no matching row in {@code trades}. */
+/**
+ * TICKET-ADV025
+ * 404 Not Found: the given {@code tradeRef} has no matching row in {@code trades}.
+ */
 public class TradeNotFoundException extends ReconException {
     /** @param tradeRef the trade reference that could not be found */
     public TradeNotFoundException(String tradeRef) {

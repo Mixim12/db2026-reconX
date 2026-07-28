@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.exception;
 
 /**
+ * TICKET-ADV025
  * 400 Bad Request: a trade failed business validation (e.g. a Builder
  * invariant or a JSR-380 constraint on the inbound DTO).
  */
