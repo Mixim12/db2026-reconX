@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  ============================================================================
- TICKET-ADV017 — Seed data (counterparties, instruments, sample trades, users)
- WHAT:    Loads CSV files baked into the JAR.
- HOW:     <loadData> reads from classpath — paths are relative to the
-          changeSet file. CSV headers must match column names.
- WHY:     The student copy ships an empty DB; the trainer copy ships seeded
-          data so demos work the moment the app boots.
- OBSERVE: SELECT count(*) FROM counterparties → 10. trades → 500.
-          users → 4 (admin/trader/viewer/recon analyst).
+ TICKET-ADV017 — Seed data: 10 counterparties, 50 instruments, 500 trades, users
+ WHAT:    Loads deterministic seed data (counterparties, instruments, trades,
+          recon_breaks, users) for development and testing environments.
+ HOW:     Liquibase changesets guarded by context="dev,test" and preconditions
+          checking existing table row counts so re-runs never double-insert.
+ WHY:     Ensures every developer and local test instance has populated tables
+          with trades spread across all four monthly partitions (2026-04..07).
+ OBSERVE: SELECT count(*) FROM counterparties → 10.
+          SELECT count(*) FROM instruments → 50.
+          SELECT count(*) FROM trades → 500 (~125 per partition).
+          SELECT count(*) FROM users → 4.
  ============================================================================
 -->
 <databaseChangeLog
@@ -37,17 +40,72 @@
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">SELECT COUNT(*) FROM instruments</sqlCheck>
         </preConditions>
-        <loadData file="data/instruments.csv" tableName="instruments"
-                  separator="," relativeToChangelogFile="true">
-            <column name="id" type="NUMERIC"/>
-            <column name="symbol" type="STRING"/>
-            <column name="name" type="STRING"/>
-            <column name="asset_class" type="STRING"/>
-            <column name="currency" type="STRING"/>
-            <column name="isin" type="STRING"/>
-        </loadData>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO instruments (symbol, name, asset_class, currency, isin, metadata) VALUES
+              ('SAP.DE', 'SAP SE',                'EQUITY',       'EUR', 'DE0007164600', '{"sector":"Technology","exchange":"XETR"}'::JSONB),
+              ('US10Y',  'US 10-Year Treasury',   'FIXED_INCOME', 'USD', 'US912828F622', '{"tenor":"10Y","issuer":"US Treasury"}'::JSONB),
+              ('EURUSD', 'Euro / US Dollar',      'FX',           'USD', NULL,            '{"pair":["EUR","USD"]}'::JSONB),
+              ('XAU',    'Spot Gold',             'COMMODITY',    'USD', NULL,            '{"unit":"troy ounce"}'::JSONB),
+              ('CL_FUT', 'WTI Crude Oil Futures', 'DERIVATIVE',   'USD', NULL,            '{"underlying":"WTI","contractSize":1000}'::JSONB);
+
+            INSERT INTO instruments (symbol, name, asset_class, currency, isin, metadata)
+            SELECT
+                'GEN' || LPAD(g::TEXT, 4, '0'),
+                'Generated Instrument ' || g,
+                (ARRAY['EQUITY','FIXED_INCOME','FX','COMMODITY','DERIVATIVE'])[1 + (g % 5)],
+                (ARRAY['USD','EUR','GBP','JPY','CHF'])[1 + (g % 5)],
+                NULL,
+                jsonb_build_object('seq', g, 'auto', true)
+            FROM generate_series(1, 45) AS g;
+        ]]></sql>
         <rollback>
             <sql>DELETE FROM instruments;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-seed-trades" author="trainer" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM trades</sqlCheck>
+            </and>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO trades (trade_ref, instrument_id, counterparty_id, quantity, price, trade_date, status)
+            SELECT
+                'TRD-2026-' || LPAD(n::TEXT, 6, '0')                     AS trade_ref,
+                1 + (n % 50)                                              AS instrument_id,
+                1 + (n % 10)                                              AS counterparty_id,
+                ROUND((random() * 10000 + 1)::NUMERIC, 4)                 AS quantity,
+                ROUND((random() * 500 + 1)::NUMERIC, 4)                   AS price,
+                DATE '2026-04-01' + (n % 120) * INTERVAL '1 day'          AS trade_date,
+                (ARRAY['PENDING','MATCHED','UNMATCHED','DISPUTED','MATCHED','MATCHED'])[1 + (n % 6)]
+                                                                          AS status
+            FROM generate_series(1, 500) AS n;
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM trades;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-seed-recon-breaks" author="trainer" context="dev,test">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM recon_breaks</sqlCheck>
+            </and>
+        </preConditions>
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO recon_breaks (trade_id, discrepancy_type, status)
+            SELECT id,
+                   (ARRAY['PRICE_MISMATCH','QUANTITY_MISMATCH','DATE_MISMATCH'])[1 + (id % 3)],
+                   'OPEN'
+            FROM trades
+            WHERE status IN ('UNMATCHED','DISPUTED')
+            LIMIT 30;
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM recon_breaks;</sql>
         </rollback>
     </changeSet>
 
