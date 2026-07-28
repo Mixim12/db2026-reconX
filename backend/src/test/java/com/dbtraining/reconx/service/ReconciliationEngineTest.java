@@ -45,10 +45,60 @@ class ReconciliationEngineTest {
         org.junit.jupiter.api.Assertions.fail("TICKET-ADV042 not implemented yet");
     }
 
+    // ---- TICKET-ADV047 edge cases -----------------------------------------
+
     @Test
     void testReconcile_emptyInternal_returnsEmpty() {
-        // TODO(TICKET-ADV040): empty internal + empty external -> reconcile returns an empty list.
-        org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
+        // given / when
+        List<ReconResult> out = engine.reconcile(List.of(), List.of(), ReconciliationRule.EXACT);
+
+        // then
+        assertThat(out).isEmpty();
+    }
+
+    @Test
+    void testReconcile_singleInternalNoExternal_returnsBreakWithMissingExternalReason() {
+        // given
+        EquityTrade internal = equity("EQU-20260603-0020", "100.00", "1000");
+
+        // when
+        List<ReconResult> out = engine.reconcile(List.of(internal), List.of(), ReconciliationRule.EXACT);
+
+        // then
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).status()).isEqualTo(ReconResult.Status.BREAK);
+        // NOTE: engine's matchOne() names this reason "MISSING_EXTERNAL" (see
+        // TICKET-ADV042's stub above) - aligning on that string rather than the
+        // "MISSING_COUNTERPARTY_TRADE" wording used loosely in the guide prose.
+        assertThat(out.get(0).discrepancyType()).isEqualTo("MISSING_EXTERNAL");
+    }
+
+    @Test
+    void testReconcile_allMismatched_everyResultIsBreak() {
+        // given
+        EquityTrade i1 = equity("EQU-20260603-0010", "100.00", "1000");
+        EquityTrade e1 = equity("EQU-20260603-0010", "150.00", "1000");
+        EquityTrade i2 = equity("EQU-20260603-0011", "50.00", "500");
+        EquityTrade e2 = equity("EQU-20260603-0011", "75.00", "500");
+        EquityTrade i3 = equity("EQU-20260603-0012", "10.00", "100");
+        EquityTrade e3 = equity("EQU-20260603-0012", "20.00", "100");
+
+        // when
+        List<ReconResult> out = engine.reconcile(
+                List.of(i1, i2, i3), List.of(e1, e2, e3), ReconciliationRule.EXACT);
+
+        // then
+        // TODO(TICKET-ADV038 blocker): the reviewer asked for this assertion to go
+        // through ReconSummaryCollector instead of manual filter/count, but neither
+        // ReconSummaryCollector nor ReconSummary exist anywhere in the repo yet -
+        // ADV038 is an even-numbered ticket outside this session's scope, so it is
+        // not implemented here. Left as manual counting until ADV038 lands; revisit
+        // then instead of guessing at ADV038's shape.
+        assertThat(out).hasSize(3);
+        long matched = out.stream().filter(r -> r.status() == ReconResult.Status.MATCHED).count();
+        long broken  = out.stream().filter(r -> r.status() == ReconResult.Status.BREAK).count();
+        assertThat(matched).isZero();
+        assertThat(broken).isEqualTo(3);
     }
 
     private EquityTrade equity(String ref, String price, String qty) {

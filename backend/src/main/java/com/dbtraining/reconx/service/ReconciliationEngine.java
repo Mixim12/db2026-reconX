@@ -14,8 +14,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * ============================================================================
@@ -34,6 +32,11 @@ import java.util.stream.Collectors;
  * OBSERVE: Histogram appears at /actuator/prometheus under
  *          reconciliation_duration_seconds.
  * ============================================================================
+ *
+ * NOTE (ADV047): the null/empty guards and the exhaustive-switch matching
+ * belong to TICKET-ADV033 (this class's main implementation) and land there,
+ * not in this PR. This ticket's scope is edge-case *tests* against that
+ * implementation once ADV033 is merged.
  */
 @Service
 public class ReconciliationEngine {
