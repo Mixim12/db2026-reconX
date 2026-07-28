@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 ============================================================================
-TICKET-ADV098 — CSS Grid page shell (sidebar + header + main + footer)
+TICKET-ADV098 — Flexbox page shell (sidebar + header + main + footer)
 TICKET-ADV099 — Semantic HTML5 (header/nav/main/section/article/aside/footer)
 TICKET-ADV100 — ARIA roles + aria-live for the trade feed
 ============================================================================
@@ -13,10 +13,10 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-  <header class="layout__header" role="banner">
-    <h1 class="layout__title">ReconX</h1>
-    <nav class="layout__nav" aria-label="Main navigation">
+<body class="app-shell">
+  <header class="app-header" role="banner">
+    <h1 class="app-header__title">ReconX</h1>
+    <nav class="app-header__nav" aria-label="Main navigation">
       <a href="dashboard.html" aria-current="page">Dashboard</a>
       <a href="trades.html">Trades</a>
       <a href="recon.html">Recon</a>
@@ -24,34 +24,35 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
     <button id="theme-toggle" aria-label="Toggle light/dark theme">🌗</button>
   </header>
 
-  <aside class="layout__sidebar" role="complementary">
-    <h2>Quick filters</h2>
-    <ul>
-      <li><a href="#">All trades</a></li>
-      <li><a href="#">Open breaks</a></li>
-      <li><a href="#">Today</a></li>
-    </ul>
-  </aside>
+  <div class="app-body">
+    <aside class="app-sidebar" role="complementary">
+      <h2>Quick filters</h2>
+      <ul>
+        <li><a href="#">All trades</a></li>
+        <li><a href="#">Open breaks</a></li>
+        <li><a href="#">Today</a></li>
+      </ul>
+    </aside>
 
-  <main class="layout__main" role="main">
-    <section aria-labelledby="kpi">
-      <h2 id="kpi">Today at a glance</h2>
-      <div class="stat-grid">
-        <article class="stat-card"><h3>Trades</h3><p>120</p></article>
-        <article class="stat-card"><h3>Matched</h3><p>105</p></article>
-        <article class="stat-card stat-card--warn"><h3>Open breaks</h3><p>15</p></article>
-        <article class="stat-card"><h3>Notional</h3><p>$24.3M</p></article>
-      </div>
-    </section>
+    <main class="app-main" role="main">
+      <section aria-labelledby="kpi">
+        <h2 id="kpi">Today at a glance</h2>
+        <section class="dashboard-grid">
+          <article class="stat-card"><h3>Trades</h3><p>120</p></article>
+          <article class="stat-card"><h3>Matched</h3><p>105</p></article>
+          <article class="stat-card stat-card--warn"><h3>Open breaks</h3><p>15</p></article>
+        </section>
+      </section>
 
-    <section aria-labelledby="feed">
-      <h2 id="feed">Live trade feed</h2>
-      <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
-      <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
-    </section>
-  </main>
+      <section aria-labelledby="feed">
+        <h2 id="feed">Live trade feed</h2>
+        <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
+        <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
+      </section>
+    </main>
+  </div>
 
-  <footer class="layout__footer" role="contentinfo">
+  <footer class="app-footer" role="contentinfo">
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
 
