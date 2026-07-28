@@ -1,5 +1,7 @@
 package com.dbtraining.reconx.controller;
 
+import com.dbtraining.reconx.dto.PagedResponse;
+import com.dbtraining.reconx.dto.ReconResultResponse;
 import com.dbtraining.reconx.dto.ReconRunRequest;
 import com.dbtraining.reconx.exception.TradeNotFoundException;
 import com.dbtraining.reconx.repository.ReconBreakRepository;
@@ -8,11 +10,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,11 +45,16 @@ public class ReconController {
 
     @GetMapping("/jobs/{jobId}/results")
     @Operation(summary = "Get results for a recon job")
-    public List<ReconBreak> results(@PathVariable String jobId) {
-        // recon_jobs isn't wired up yet, so every job id currently surfaces
-        // all open breaks — narrow this to breaks.findByJobId(jobId) once
-        // ReconBreak carries a jobId column.
-        return breaks.findAll();
+    public PagedResponse<ReconResultResponse> results(
+            @PathVariable String jobId,
+            @PageableDefault(size = 50) Pageable pageable) {
+        // NOTE (TICKET-ADV069): ReconBreak now carries a jobId column, but
+        // nothing populates it yet — TICKET-ADV068 (POST /recon/run, a
+        // separate ticket) is still a stub and no writer sets jobId on
+        // create. This endpoint is correct against the schema/repository
+        // but can't be verified end-to-end until ADV068 lands; coordinate
+        // there before calling this "done" in the full flow.
+        return PagedResponse.from(breaks.findByJobId(jobId, pageable), ReconResultResponse::from);
     }
 
     @PutMapping("/results/{id}/resolve")
