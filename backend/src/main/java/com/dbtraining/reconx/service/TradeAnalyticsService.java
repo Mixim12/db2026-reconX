@@ -5,7 +5,6 @@ import com.dbtraining.reconx.model.TradeType;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,14 +30,14 @@ public class TradeAnalyticsService {
 
     /**
      * TICKET-ADV035 — VWAP = SUM(price * qty) / SUM(qty). Equity-only — only
-     * EquityTrade has a meaningful price-volume pair.
+     * EquityTrade has a meaningful price-volume pair. Delegates the actual
+     * reduction to {@link VwapCollector}, a hand-written Collector with all
+     * four contributions (supplier/accumulator/combiner/finisher), as the
+     * ticket requires — not groupingBy+toMap over a pre-reduced list.
      */
     public Map<String, BigDecimal> vwapByInstrument(List<EquityTrade> equityTrades) {
-        // TODO(TICKET-ADV035): group by EquityTrade::instrumentSymbol, then for
-        //   each bucket compute SUM(price * qty) / SUM(qty) using BigDecimal
-        //   with RoundingMode.HALF_UP. Return BigDecimal.ZERO when totalQty is 0
-        //   (avoid ArithmeticException on division by zero).
-        throw new UnsupportedOperationException("TICKET-ADV035");
+        return equityTrades.stream()
+                .collect(Collectors.groupingBy(EquityTrade::instrumentSymbol, new VwapCollector()));
     }
 
     /** TICKET-ADV036 — P&L per instrument symbol (sign by Side). */
