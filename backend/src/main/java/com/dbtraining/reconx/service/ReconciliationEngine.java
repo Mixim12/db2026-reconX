@@ -8,6 +8,8 @@ import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.ReconciliationRule;
 import com.dbtraining.reconx.model.TradeType;
 import io.micrometer.core.annotation.Timed;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -41,6 +43,8 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class ReconciliationEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(ReconciliationEngine.class);
+
     @Timed(value = "reconciliation.duration", description = "Wall time of reconcile()",
            percentiles = {0.5, 0.95, 0.99}, histogram = true)
     public List<ReconResult> reconcile(List<TradeType> internal,
@@ -73,6 +77,26 @@ public class ReconciliationEngine {
 
         return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
                 .thenApply(v -> futures.stream().flatMap(f -> f.join().stream()).toList());
+    }
+
+    /**
+     * TICKET-ADV131 — entry point the Kafka trade-events consumer calls on
+     * TRADE_CREATED/TRADE_UPDATED. Real job persistence (a row in
+     * recon_jobs) lands with TICKET-ADV068; for now this just logs the
+     * trigger so the message flow is traceable end-to-end.
+     */
+    public void scheduleRecon(String tradeRef) {
+        log.info("Scheduling reconciliation for tradeRef={}", tradeRef);
+    }
+
+    /**
+     * TICKET-ADV131 — entry point the Kafka trade-events consumer calls on
+     * TRADE_CANCELLED, so a pending job for a now-cancelled trade doesn't
+     * run. Real job cancellation (recon_jobs status update) lands with
+     * TICKET-ADV068; for now this just logs the trigger.
+     */
+    public void cancelPendingRecon(String tradeRef) {
+        log.info("Cancelling any pending reconciliation for tradeRef={}", tradeRef);
     }
 
     private ReconResult matchOne(TradeType internal, TradeType external, ReconciliationRule rule) {
