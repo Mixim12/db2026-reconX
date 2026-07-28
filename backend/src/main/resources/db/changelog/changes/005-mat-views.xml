@@ -41,4 +41,8 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="tag-release-1-2" author="trainer">
+        <tagDatabase tag="release-1.2"/>
+    </changeSet>
+
 </databaseChangeLog>

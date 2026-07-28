@@ -41,13 +41,18 @@ public record Money(BigDecimal amount, Currency currency) {
 
     /** Add another Money of the same currency. Throws on currency mismatch. */
     public Money plus(Money other) {
-        // TODO(TICKET-ADV024): validate same currency, then return a new Money
-        //                     whose amount = this.amount + other.amount.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        Objects.requireNonNull(other, "other");
+        if (!currency.equals(other.currency())) {
+            throw new IllegalArgumentException(
+                    "Money currency mismatch: %s cannot be added to %s"
+                            .formatted(other.currency().getCurrencyCode(), currency.getCurrencyCode()));
+        }
+        return new Money(amount.add(other.amount()), currency);
     }
 
+    /** Scale this Money by a multiplier. Returns a new instance; never mutates. */
     public Money times(BigDecimal multiplier) {
-        // TODO(TICKET-ADV024): return a new Money whose amount = this.amount * multiplier.
-        throw new UnsupportedOperationException("TICKET-ADV024");
+        Objects.requireNonNull(multiplier, "multiplier");
+        return new Money(amount.multiply(multiplier), currency);
     }
 }
