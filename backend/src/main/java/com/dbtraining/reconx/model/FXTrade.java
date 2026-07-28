@@ -74,15 +74,15 @@ public final class FXTrade extends Trade implements TradeType {
     }
 
     @Override
-    public boolean equals(Object other) {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+    public boolean equals(Object o) {
+        return this == o
+                || (o instanceof FXTrade other
+                && tradeRef().equals(other.tradeRef()));
     }
 
     @Override
     public int hashCode() {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return tradeRef().hashCode();
     }
 
     @Override
