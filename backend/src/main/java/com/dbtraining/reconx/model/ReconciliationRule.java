@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * ============================================================================
@@ -36,18 +37,51 @@ public enum ReconciliationRule {
     public BigDecimal qtyToleranceAbs()   { return qtyToleranceAbs; }
 
     /**
+     * Scale used when dividing the absolute price difference by the internal
+     * price. Ten decimal places is far finer than any tolerance we model, so
+     * the rounding never decides a borderline case on its own.
+     */
+    private static final int DRIFT_SCALE = 10;
+
+    /**
      * Decide whether two prices/quantities are within this rule's tolerance.
+     *
+     * <p>Price drift is expressed as a fraction of the internal price
+     * (so {@code 0.01} means 1%), quantity drift as an absolute unit count.
+     * Both drifts are absolute values, which makes the comparison
+     * sign-independent: an external price above or below the internal one by
+     * the same amount yields the same answer.
+     *
+     * <p>Zero-price guard: when {@code internalPrice} is zero there is no
+     * meaningful denominator, so the price drift is defined as zero rather
+     * than raising {@link ArithmeticException}. Such a pair is then decided
+     * purely by its quantity leg.
+     *
+     * <p>All numeric comparisons go through {@link BigDecimal#compareTo},
+     * never {@code equals}, so {@code 100.00} and {@code 100.0} are treated
+     * as the same value despite their different scales.
+     *
      * @return true if BOTH the price diff (as %) AND the qty diff (as abs)
      *         are within tolerance.
      */
     public boolean matches(BigDecimal internalPrice, BigDecimal internalQty,
                            BigDecimal externalPrice, BigDecimal externalQty) {
-        // TODO(TICKET-ADV026):
-        //   1. Compute |internalPrice - externalPrice| as priceDiff.
-        //   2. priceDiffPct = priceDiff / internalPrice (guard divide-by-zero).
-        //   3. qtyDiff = |internalQty - externalQty|.
-        //   4. Return true iff priceDiffPct <= priceTolerancePct AND
-        //      qtyDiff <= qtyToleranceAbs.
-        throw new UnsupportedOperationException("TICKET-ADV026");
+        BigDecimal priceDrift = priceDrift(internalPrice, externalPrice);
+        BigDecimal qtyDrift   = externalQty.subtract(internalQty).abs();
+
+        return priceDrift.compareTo(priceTolerancePct) <= 0
+                && qtyDrift.compareTo(qtyToleranceAbs) <= 0;
+    }
+
+    /**
+     * Absolute price difference as a fraction of the internal price, or zero
+     * when the internal price is zero (see the zero-price guard above).
+     */
+    private static BigDecimal priceDrift(BigDecimal internalPrice, BigDecimal externalPrice) {
+        if (internalPrice.signum() == 0) {
+            return BigDecimal.ZERO;
+        }
+        return externalPrice.subtract(internalPrice).abs()
+                .divide(internalPrice.abs(), DRIFT_SCALE, RoundingMode.HALF_UP);
     }
 }
