@@ -42,7 +42,10 @@
          Replaced with a plain index so trade_id lookups stay fast. -->
     <changeSet id="004-drop-settlements-trade-fk" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <not><indexExists indexName="idx_settlements_trade_id"/></not>
+            </and>
         </preConditions>
         <comment>Partitioned trades can't back a plain single-column FK on id;
                   drop it and index trade_id directly instead.</comment>
@@ -60,7 +63,10 @@
     <!-- Recreate trades as a RANGE-partitioned parent + monthly children. -->
     <changeSet id="004-partition-trades" author="trainer">
         <preConditions onFail="MARK_RAN">
-            <dbms type="postgresql"/>
+            <and>
+                <dbms type="postgresql"/>
+                <not><tableExists tableName="trades_y2026m04"/></not>
+            </and>
         </preConditions>
         <comment>trades becomes the RANGE(trade_date) parent; trade_ref
                   uniqueness and the PK both widen to include trade_date so

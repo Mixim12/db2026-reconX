@@ -34,10 +34,12 @@ public record TradeRequest(
         @Pattern(regexp = "^(BUY|SELL)$")
         String side,
 
-        @NotNull @Positive
+        @NotNull
+        @Positive
         BigDecimal quantity,
 
-        @NotNull @PositiveOrZero
+        @NotNull
+        @PositiveOrZero
         BigDecimal price,
 
         @NotNull
