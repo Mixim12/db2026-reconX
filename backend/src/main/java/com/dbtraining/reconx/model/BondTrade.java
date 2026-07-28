@@ -17,38 +17,33 @@ import java.util.Objects;
  */
 public final class BondTrade extends Trade implements TradeType {
 
-    private final TradeRef tradeRef;
     private final String isin;
     private final BigDecimal faceValue;
     private final BigDecimal couponRate;
     private final LocalDate maturityDate;
     private final Currency currency;
     private final Side side;
-    private final LocalDate tradeDate;
     private final long counterpartyId;
 
     private BondTrade(Builder b) {
-        this.tradeRef       = b.tradeRef;
-        this.isin           = b.isin;
-        this.faceValue      = b.faceValue;
-        this.couponRate     = b.couponRate;
-        this.maturityDate   = b.maturityDate;
-        this.currency       = b.currency;
-        this.side           = b.side;
-        this.tradeDate      = b.tradeDate;
+        super(
+                b.tradeRef,
+                new Money(b.faceValue, b.currency),
+                b.tradeDate
+        );
+
+        this.isin = b.isin;
+        this.faceValue = b.faceValue;
+        this.couponRate = b.couponRate;
+        this.maturityDate = b.maturityDate;
+        this.currency = b.currency;
+        this.side = b.side;
         this.counterpartyId = b.counterpartyId;
     }
 
     public static Builder builder() { return new Builder(); }
 
-    @Override public TradeRef tradeRef()     { return tradeRef; }
-    @Override public LocalDate tradeDate()   { return tradeDate; }
     @Override public AssetClass assetClass() { return AssetClass.BOND; }
-
-    /** Notional = faceValue in the bond's currency. */
-    @Override public Money notional() {
-        return new Money(faceValue, currency);
-    }
 
     public String isin()              { return isin; }
     public BigDecimal faceValue()     { return faceValue; }
@@ -70,9 +65,20 @@ public final class BondTrade extends Trade implements TradeType {
         return tradeRef().hashCode();
     }
 
-    @Override public String toString() {
-        // TODO(TICKET-ADV030): "BondTrade[ref=..., isin=..., face=... CCY, coupon=..., maturity=..., side=...]"
-        throw new UnsupportedOperationException("TICKET-ADV030");
+    @Override
+    public String toString() {
+        // NOTE: counterpartyId and any settlement or issuer identifiers are
+        // deliberately omitted to prevent sensitive data from reaching logs.
+        return "BondTrade[ref=%s, isin=%s, face=%s %s, coupon=%s, maturity=%s, side=%s]"
+                .formatted(
+                        tradeRef().value(),
+                        isin,
+                        faceValue.toPlainString(),
+                        currency.getCurrencyCode(),
+                        couponRate.toPlainString(),
+                        maturityDate,
+                        side
+                );
     }
 
     public static final class Builder {

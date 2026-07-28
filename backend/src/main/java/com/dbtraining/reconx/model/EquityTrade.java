@@ -25,36 +25,31 @@ import java.util.Objects;
  */
 public final class EquityTrade extends Trade implements TradeType {
 
-    private final TradeRef tradeRef;
     private final String instrumentSymbol;
     private final BigDecimal quantity;
     private final BigDecimal price;
     private final Currency currency;
     private final Side side;
-    private final LocalDate tradeDate;
     private final long counterpartyId;
 
     private EquityTrade(Builder b) {
-        this.tradeRef         = b.tradeRef;
+        super(
+                b.tradeRef,
+                new Money(b.quantity.multiply(b.price), b.currency),
+                b.tradeDate
+        );
+
         this.instrumentSymbol = b.instrumentSymbol;
-        this.quantity         = b.quantity;
-        this.price            = b.price;
-        this.currency         = b.currency;
-        this.side             = b.side;
-        this.tradeDate        = b.tradeDate;
-        this.counterpartyId   = b.counterpartyId;
+        this.quantity = b.quantity;
+        this.price = b.price;
+        this.currency = b.currency;
+        this.side = b.side;
+        this.counterpartyId = b.counterpartyId;
     }
 
     public static Builder builder() { return new Builder(); }
 
-    @Override public TradeRef tradeRef()    { return tradeRef; }
-    @Override public LocalDate tradeDate()  { return tradeDate; }
     @Override public AssetClass assetClass(){ return AssetClass.EQUITY; }
-
-    /** Notional = quantity * price in the trade currency. */
-    @Override public Money notional() {
-        return new Money(quantity.multiply(price), currency);
-    }
 
     public String instrumentSymbol() { return instrumentSymbol; }
     public BigDecimal quantity()     { return quantity; }
@@ -78,9 +73,17 @@ public final class EquityTrade extends Trade implements TradeType {
 
     @Override
     public String toString() {
-        // TODO(TICKET-ADV030): "EquityTrade[ref=..., symbol=..., qty=..., price=... CCY, side=...]"
-        //                     — must NOT leak counterparty PII.
-        throw new UnsupportedOperationException("TICKET-ADV030");
+        // NOTE: counterpartyId and computed settlement notional are deliberately
+        // omitted to prevent PII and sensitive settlement data from reaching logs.
+        return "EquityTrade[ref=%s, symbol=%s, qty=%s, price=%s %s, side=%s]"
+                .formatted(
+                        tradeRef().value(),
+                        instrumentSymbol,
+                        quantity.toPlainString(),
+                        price.toPlainString(),
+                        currency.getCurrencyCode(),
+                        side
+                );
     }
 
     /** Fluent builder. Required fields validated in {@link #build()}. */
