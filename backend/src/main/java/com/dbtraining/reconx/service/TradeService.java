@@ -69,6 +69,13 @@ public class TradeService {
         Trade trade = tradeRepo.findById(id)
                 .orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
 
+        if (!trade.getTradeRef().equals(req.tradeRef())) {
+            tradeRepo.findByTradeRef(req.tradeRef()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new DuplicateTradeRefException(req.tradeRef());
+                }
+            });
+        }
         trade.setTradeRef(req.tradeRef());
         trade.setInstrument(instRepo.findById(req.instrumentId())
                 .orElseThrow(() -> new TradeNotFoundException("instrument " + req.instrumentId())));
