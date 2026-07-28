@@ -55,7 +55,12 @@ public class KafkaErrorHandlerConfig {
                 (ConsumerRecord<?, ?> rec, Exception ex) ->
                         new TopicPartition(rec.topic() + "-dlq", rec.partition()));
         ExponentialBackOff backoff = new ExponentialBackOff(1000L, 2.0);
-        backoff.setMaxAttempts(3);
+        // TICKET-ADV135: the criterion is a total time budget (~8s), not an
+        // attempt count. setMaxAttempts(3) compiles fine (it exists on
+        // ExponentialBackOff in Spring 6.2) but caps by *count*, not time -
+        // CI wouldn't catch the difference either way. 1s+2s+4s = 7s < 8s,
+        // so this still yields 3 retries in practice.
+        backoff.setMaxElapsedTime(8000L);
         return new DefaultErrorHandler(recoverer, backoff);
     }
 }
