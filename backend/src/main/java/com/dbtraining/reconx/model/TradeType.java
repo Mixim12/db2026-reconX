@@ -1,6 +1,8 @@
 package com.dbtraining.reconx.model;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+
 
 /**
  * ============================================================================
@@ -27,7 +29,9 @@ import java.time.LocalDate;
  * ordering rule — there is no per-class compareTo override to forget to
  * update when adding a new field.
  */
-public sealed interface TradeType permits EquityTrade, FXTrade, BondTrade, DerivativeTrade {
+public sealed interface TradeType
+        extends Comparable<TradeType>
+        permits EquityTrade, FXTrade, BondTrade, DerivativeTrade {
 
     /** Stable natural key. Drives equals/hashCode. */
     TradeRef tradeRef();
@@ -42,4 +46,14 @@ public sealed interface TradeType permits EquityTrade, FXTrade, BondTrade, Deriv
     AssetClass assetClass();
 
     enum AssetClass { EQUITY, FX, BOND, DERIVATIVE }
+
+    Comparator<TradeType> NATURAL = Comparator
+            .comparing(TradeType::tradeDate)
+            .reversed()
+            .thenComparing(trade -> trade.tradeRef().value());
+
+    @Override
+    default int compareTo(TradeType other) {
+        return NATURAL.compare(this, other);
+    }
 }
