@@ -94,7 +94,10 @@ public class TradeController {
     @Operation(summary = "Soft delete (sets deleted_at)")
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal Object principal) {
-        service.softDelete(id, String.valueOf(principal));
+        // NOTE: no auth principal is wired until Workshop 5B - String.valueOf(null)
+        // would write the literal string "null" into the audit trail/event actor.
+        String actor = principal == null ? "system" : principal.toString();
+        service.softDelete(id, actor);
         return ResponseEntity.noContent().build();
     }
 }
