@@ -95,7 +95,10 @@ public class TradeController {
     @Operation(summary = "Soft delete (sets deleted_at)")
     public ResponseEntity<Void> delete(@PathVariable Long id,
                                        @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV067): service.softDelete(id, actor); return 204 No Content.
-        throw new UnsupportedOperationException("TICKET-ADV067");
+        // NOTE: no auth principal is wired until Workshop 5B - String.valueOf(null)
+        // would write the literal string "null" into the audit trail/event actor.
+        String actor = principal == null ? "system" : principal.toString();
+        service.softDelete(id, actor);
+        return ResponseEntity.noContent().build();
     }
 }
