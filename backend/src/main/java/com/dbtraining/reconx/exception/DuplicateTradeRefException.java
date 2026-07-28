@@ -1,7 +1,8 @@
 package com.dbtraining.reconx.exception;
 
-/** TICKET-ADV025 — 409 Conflict: tradeRef already exists. */
+/** 409 Conflict: a trade with this {@code tradeRef} already exists. */
 public class DuplicateTradeRefException extends ReconException {
+    /** @param tradeRef the trade reference that already exists */
     public DuplicateTradeRefException(String tradeRef) {
         super("Duplicate tradeRef: " + tradeRef);
     }
