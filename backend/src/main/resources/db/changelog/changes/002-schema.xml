@@ -106,8 +106,4 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="tag-release-1-0" author="trainer">
-        <tagDatabase tag="release-1.0"/>
-    </changeSet>
-
 </databaseChangeLog>
