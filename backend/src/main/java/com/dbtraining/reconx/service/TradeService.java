@@ -66,9 +66,31 @@ public class TradeService {
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
-        // TODO(TICKET-ADV065): load by id (throw TradeNotFoundException if missing),
-        //   copy mutable fields from req, save, publish a TRADE_UPDATED event.
-        throw new UnsupportedOperationException("TICKET-ADV065");
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() -> new TradeNotFoundException(String.valueOf(id)));
+
+        if (!trade.getTradeRef().equals(req.tradeRef())) {
+            tradeRepo.findByTradeRef(req.tradeRef()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new DuplicateTradeRefException(req.tradeRef());
+                }
+            });
+        }
+        trade.setTradeRef(req.tradeRef());
+        trade.setInstrument(instRepo.findById(req.instrumentId())
+                .orElseThrow(() -> new TradeNotFoundException("instrument " + req.instrumentId())));
+        trade.setCounterparty(cpRepo.findById(req.counterpartyId())
+                .orElseThrow(() -> new TradeNotFoundException("counterparty " + req.counterpartyId())));
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
+        trade.setQuantity(req.quantity());
+        trade.setPrice(req.price());
+        trade.setTradeDate(req.tradeDate());
+
+        Trade saved = tradeRepo.save(trade);
+        events.publish(new TradeEvent(UUID.randomUUID(), saved.getTradeRef(),
+                TradeEvent.EventType.TRADE_UPDATED, Instant.now(), actor, null, saved.getStatus()));
+        return saved;
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
