@@ -42,6 +42,28 @@ class ReconciliationEngineTest {
         org.junit.jupiter.api.Assertions.fail("TICKET-ADV040 not implemented yet");
     }
 
+    @Test
+    void testReconcile_allMismatched_everyResultIsBreak() {
+        // given
+        EquityTrade i1 = equity("EQU-20260603-0010", "100.00", "1000");
+        EquityTrade e1 = equity("EQU-20260603-0010", "150.00", "1000");
+        EquityTrade i2 = equity("EQU-20260603-0011", "50.00", "500");
+        EquityTrade e2 = equity("EQU-20260603-0011", "75.00", "500");
+        EquityTrade i3 = equity("EQU-20260603-0012", "10.00", "100");
+        EquityTrade e3 = equity("EQU-20260603-0012", "20.00", "100");
+
+        // when
+        List<ReconResult> out = engine.reconcile(
+                List.of(i1, i2, i3), List.of(e1, e2, e3), ReconciliationRule.EXACT);
+
+        // then
+        assertThat(out).hasSize(3);
+        long matched = out.stream().filter(r -> r.status() == ReconResult.Status.MATCHED).count();
+        long broken  = out.stream().filter(r -> r.status() == ReconResult.Status.BREAK).count();
+        assertThat(matched).isZero();
+        assertThat(broken).isEqualTo(3);
+    }
+
     private EquityTrade equity(String ref, String price, String qty) {
         return EquityTrade.builder()
                 .tradeRef(TradeRef.of(ref))
