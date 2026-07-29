@@ -39,7 +39,6 @@ spring:
   # ADV128 — Kafka producer/consumer defaults. Topics are created at startup
   # by KafkaTopicsConfig (see com.dbtraining.reconx.kafka.KafkaTopicsConfig).
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -111,4 +110,4 @@ springdoc:
     tagsSorter: alpha
     operationsSorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /v1/api-docs
