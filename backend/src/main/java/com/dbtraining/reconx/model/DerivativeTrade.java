@@ -6,16 +6,18 @@ import java.util.Currency;
 import java.util.Objects;
 
 /**
- * Derivative option trade with an underlying instrument, strike price,
- * quantity, expiry date and option type.
+ * ============================================================================
+ * TICKET-ADV022 — DerivativeTrade with Builder pattern
  *
- * <p>The simplified notional is calculated as:
- * {@code strike * quantity}, in the trade currency.</p>
+ * WHAT:    Option/derivative trade with underlying, strike, quantity,
+ *          expiry and option type.
+ * HOW:     Construction happens through a Builder. The simplified notional
+ *          is strike * quantity in the trade currency.
  *
- * <p>Historical derivatives are valid reconciliation records. Therefore,
- * expiry is validated only against {@code tradeDate}. It is deliberately
- * not compared with {@link LocalDate#now()}, so an option that has already
- * expired can still be loaded and reconciled.</p>
+ * Historical derivatives are valid reconciliation records. Expiry is
+ * validated only against tradeDate and is deliberately not compared with
+ * LocalDate.now().
+ * ============================================================================
  */
 public final class DerivativeTrade extends Trade implements TradeType {
 
@@ -96,20 +98,32 @@ public final class DerivativeTrade extends Trade implements TradeType {
 
     @Override
     public boolean equals(Object other) {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return this == other
+                || (other instanceof DerivativeTrade derivative
+                && tradeRef().equals(derivative.tradeRef()));
     }
 
     @Override
     public int hashCode() {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return tradeRef().hashCode();
     }
 
     @Override
     public String toString() {
-        // TODO(TICKET-ADV030)
-        throw new UnsupportedOperationException("TICKET-ADV030");
+        // NOTE: counterpartyId and computed settlement notional are deliberately
+        // omitted to prevent PII and sensitive settlement data from reaching logs.
+        return "DerivativeTrade[ref=%s, %s %s on %s, strike=%s %s, qty=%s, expiry=%s, side=%s]"
+                .formatted(
+                        tradeRef().value(),
+                        optionType,
+                        underlying,
+                        tradeDate(),
+                        strike.toPlainString(),
+                        currency.getCurrencyCode(),
+                        quantity.toPlainString(),
+                        expiry,
+                        side
+                );
     }
 
     public static final class Builder {
@@ -158,13 +172,9 @@ public final class DerivativeTrade extends Trade implements TradeType {
             return this;
         }
 
-        public Builder currency(Currency currency) {
-            this.currency = currency;
-            return this;
-        }
-
         public Builder currency(String code) {
-            return currency(Currency.getInstance(code));
+            this.currency = Currency.getInstance(code);
+            return this;
         }
 
         public Builder side(Side side) {
@@ -201,6 +211,8 @@ public final class DerivativeTrade extends Trade implements TradeType {
                 throw new IllegalStateException("quantity must be > 0");
             }
 
+            // Expiry must be strictly after tradeDate.
+            // No comparison with LocalDate.now(): expired historical trades are valid.
             if (!expiry.isAfter(tradeDate)) {
                 throw new IllegalStateException(
                         "expiry cannot be before tradeDate"

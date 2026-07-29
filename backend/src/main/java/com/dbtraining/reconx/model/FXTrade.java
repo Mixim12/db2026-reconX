@@ -74,21 +74,31 @@ public final class FXTrade extends Trade implements TradeType {
     }
 
     @Override
-    public boolean equals(Object other) {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+    public boolean equals(Object o) {
+        return this == o
+                || (o instanceof FXTrade other
+                && tradeRef().equals(other.tradeRef()));
     }
 
     @Override
     public int hashCode() {
-        // TODO(TICKET-ADV028)
-        throw new UnsupportedOperationException("TICKET-ADV028");
+        return tradeRef().hashCode();
     }
 
     @Override
     public String toString() {
-        // TODO(TICKET-ADV030)
-        throw new UnsupportedOperationException("TICKET-ADV030");
+        // NOTE: counterpartyId and the computed ccy2 settlement notional are
+        // deliberately omitted to prevent sensitive data from reaching logs.
+        return "FXTrade[ref=%s, %s/%s, notional=%s %s, rate=%s, side=%s]"
+                .formatted(
+                        tradeRef().value(),
+                        ccy1.getCurrencyCode(),
+                        ccy2.getCurrencyCode(),
+                        notionalCcy1.toPlainString(),
+                        ccy1.getCurrencyCode(),
+                        fxRate.toPlainString(),
+                        side
+                );
     }
 
     public static final class Builder {
