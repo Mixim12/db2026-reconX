@@ -108,12 +108,20 @@ public class TradeService {
                 TradeEvent.EventType.TRADE_CANCELLED, Instant.now(), actor, null, null));
     }
 
+    /**
+     * TICKET-ADV056 — composition site for the Specification factories. Each
+     * null filter contributes a no-op predicate, so one code path serves every
+     * combination of query parameters the list endpoint accepts.
+     */
     @Transactional(readOnly = true)
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
-        // TODO(TICKET-ADV055 + TICKET-ADV056): combine the static helpers from
-        //   TradeSpecifications (hasStatus, tradeDateBetween, hasCounterparty)
-        //   via Specification.where(...).and(...) and call
-        //   tradeRepo.findAll(spec, pageable). Until JPA is in place, throw.
-        throw new UnsupportedOperationException("TICKET-ADV055");
+        // Specification.where(...) is deprecated for removal in Spring Data JPA 3.5;
+        // allOf(...) is the supported way to AND a set of specifications together.
+        Specification<Trade> spec = Specification.allOf(
+                tradeDateBetween(from, to),
+                hasStatus(status),
+                forCounterparty(counterpartyId));
+
+        return tradeRepo.findAll(spec, pageable);
     }
 }
