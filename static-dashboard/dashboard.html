@@ -11,6 +11,7 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
   <meta charset="utf-8" />
   <title>ReconX (static) — Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="app-shell">
@@ -21,7 +22,7 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
       <a href="trades.html">Trades</a>
       <a href="recon.html">Recon</a>
     </nav>
-    <button id="theme-toggle" aria-label="Toggle light/dark theme">🌗</button>
+    <button id="theme-toggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌗</button>
   </header>
 
   <div class="app-body">
@@ -56,7 +57,6 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
 
-  <script src="js/theme.js"></script>
   <script src="js/sse.js"></script>
 </body>
 </html>
