@@ -47,8 +47,32 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
 
       <section aria-labelledby="feed">
         <h2 id="feed">Live trade feed</h2>
-        <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
-        <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
+        <!-- TICKET-ADV100 / ADV101 — section id="trade-feed" with aria-live for real-time announcements -->
+        <section id="trade-feed" role="status" aria-live="polite" aria-atomic="false">
+          <!-- Sample .trade-card elements for DevTools testing:
+          <article class="trade-card trade-card--matched">
+            <strong>EQU-20260603-0001</strong>
+            <span> SAP.DE </span>
+            <span> qty=1000 </span>
+            <span> price=125.50 </span>
+            <span> [MATCHED]</span>
+          </article>
+          <article class="trade-card trade-card--break">
+            <strong>EQU-20260603-0002</strong>
+            <span> AAPL </span>
+            <span> qty=500 </span>
+            <span> price=178.20 </span>
+            <span> [BREAK]</span>
+          </article>
+          <article class="trade-card trade-card--pending">
+            <strong>FX-20260603-0001</strong>
+            <span> EUR/USD </span>
+            <span> qty=1000000 </span>
+            <span> price=1.0852 </span>
+            <span> [PENDING]</span>
+          </article>
+          -->
+        </section>
       </section>
     </main>
   </div>
