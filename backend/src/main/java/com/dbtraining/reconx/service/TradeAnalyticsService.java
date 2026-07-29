@@ -5,6 +5,7 @@ import com.dbtraining.reconx.model.DerivativeTrade;
 import com.dbtraining.reconx.model.EquityTrade;
 import com.dbtraining.reconx.model.FXTrade;
 import com.dbtraining.reconx.model.TradeType;
+import com.dbtraining.reconx.model.Side;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
 
 /**
  * ============================================================================
@@ -84,13 +86,33 @@ public class TradeAnalyticsService {
     public Map<String, BigDecimal> pnlByInstrument(
             List<EquityTrade> equityTrades) {
 
-        // TODO(TICKET-ADV036)
-        throw new UnsupportedOperationException("TICKET-ADV036");
+        Objects.requireNonNull(
+                equityTrades,
+                "equityTrades must not be null"
+        );
+        return equityTrades.stream()
+                .collect(Collectors.groupingBy(
+                        EquityTrade::instrumentSymbol,
+                        Collectors.mapping(
+                                this::pnl,
+                                Collectors.reducing(
+                                        BigDecimal.ZERO,
+                                        BigDecimal::add
+                                )
+                        )
+                ));
     }
 
     private BigDecimal pnl(EquityTrade trade) {
-        // TODO(TICKET-ADV036)
-        throw new UnsupportedOperationException("TICKET-ADV036");
+        Objects.requireNonNull(trade,
+                "trade must not be null");
+
+        BigDecimal absoluteValue = trade.price()
+                .multiply(trade.quantity());
+
+        return trade.side() == Side.SELL
+                ? absoluteValue
+                : absoluteValue.negate();
     }
 
     /**
