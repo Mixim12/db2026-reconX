@@ -98,6 +98,54 @@ body {
 .stat-card h3 { margin: 0; font-size: var(--font-size-base); color: var(--color-text); opacity: 0.7; }
 .stat-card p  { margin: var(--space-2) 0 0; font-size: var(--font-size-xl); font-weight: 600; }
 
+/* TICKET-ADV101 — trade feed area & slide-in animation */
+#trade-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.trade-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  animation: slide-in 0.3s ease-out;
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-card strong {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.trade-card span {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+}
+
+.trade-card--matched { border-left: var(--border-width-lg) solid var(--color-success); }
+.trade-card--break   { border-left: var(--border-width-lg) solid var(--color-danger); }
+.trade-card--pending { border-left: var(--border-width-lg) solid var(--color-warning); }
+.trade-card--warn    { border-left: var(--border-width-lg) solid var(--color-warning); }
+
+@keyframes slide-in {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
 /* TICKET-ADV114 — data-table styling */
 .data-table { display: flex; flex-direction: column; border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
 .data-table__header { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--color-surface); }
