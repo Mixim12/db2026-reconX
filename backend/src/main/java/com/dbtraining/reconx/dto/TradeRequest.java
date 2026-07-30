@@ -46,3 +46,4 @@ public record TradeRequest(
         @PastOrPresent(message = "tradeDate must not be in the future")
         LocalDate tradeDate
 )
+{}
