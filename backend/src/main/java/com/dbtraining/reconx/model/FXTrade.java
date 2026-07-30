@@ -40,6 +40,7 @@ public final class FXTrade extends Trade implements TradeType {
         this.counterpartyId = builder.counterpartyId;
     }
 
+    /** A new, empty {@link Builder} — the only way to obtain an {@code FXTrade}. */
     public static Builder builder() {
         return new Builder();
     }
@@ -49,30 +50,41 @@ public final class FXTrade extends Trade implements TradeType {
         return AssetClass.FX;
     }
 
+    /** The base currency the deal was dealt in. */
     public Currency ccy1() {
         return ccy1;
     }
 
+    /** The quote currency; {@link #notional()} is expressed in this currency. */
     public Currency ccy2() {
         return ccy2;
     }
 
+    /** The deal notional expressed in {@link #ccy1()}. */
     public BigDecimal notionalCcy1() {
         return notionalCcy1;
     }
 
+    /** The ccy1/ccy2 exchange rate applied to this deal; always strictly positive. */
     public BigDecimal fxRate() {
         return fxRate;
     }
 
+    /** Whether this trade is a BUY or a SELL. */
     public Side side() {
         return side;
     }
 
+    /** The internal id of the counterparty on the other side of the trade. */
     public long counterpartyId() {
         return counterpartyId;
     }
 
+    /**
+     * Two {@code FXTrade}s are equal iff their {@link #tradeRef()} is equal.
+     * @param o the object to compare against
+     * @return {@code true} iff {@code o} is an {@code FXTrade} with the same {@code tradeRef}
+     */
     @Override
     public boolean equals(Object o) {
         return this == o
@@ -80,11 +92,13 @@ public final class FXTrade extends Trade implements TradeType {
                 && tradeRef().equals(other.tradeRef()));
     }
 
+    /** {@code tradeRef.hashCode()}, kept in lockstep with {@link #equals(Object)}. */
     @Override
     public int hashCode() {
         return tradeRef().hashCode();
     }
 
+    /** A PII-safe log representation — omits {@link #counterpartyId()}. */
     @Override
     public String toString() {
         // NOTE: counterpartyId and the computed ccy2 settlement notional are
@@ -163,6 +177,17 @@ public final class FXTrade extends Trade implements TradeType {
             return this;
         }
 
+        /**
+         * Build the immutable {@link FXTrade}, validating that every required
+         * field is set and that all invariants hold.
+         *
+         * @return a fully-constructed, validated {@code FXTrade} — never {@code null}.
+         * @throws NullPointerException  if any required field ({@code tradeRef}, {@code ccy1},
+         *                               {@code ccy2}, {@code notionalCcy1}, {@code fxRate},
+         *                               {@code side}, {@code tradeDate}) was not set.
+         * @throws IllegalStateException if {@code ccy1} equals {@code ccy2}, or if
+         *                               {@code fxRate} is not strictly positive.
+         */
         public FXTrade build() {
             Objects.requireNonNull(tradeRef, "tradeRef");
             Objects.requireNonNull(ccy1, "ccy1");

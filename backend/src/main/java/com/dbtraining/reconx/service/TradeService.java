@@ -56,13 +56,37 @@ public class TradeService {
     }
 
     public Trade create(TradeRequest req, String actor) {
-        // TODO(TICKET-ADV064): reject duplicate tradeRef via DuplicateTradeRefException,
-        //   build a new Trade with instrument + counterparty looked up from
-        //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
-        //   save, then:
+
+        tradeRepo.findByTradeRef(req.tradeRef())
+                .ifPresent(existing -> {
+                    throw new DuplicateTradeRefException(req.tradeRef());
+                });
+
+        var instrument = instRepo.findById(req.instrumentId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "instrument " + req.instrumentId()
+                ));
+
+        var counterparty = cpRepo.findById(req.counterpartyId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "counterparty " + req.counterpartyId()
+                ));
+
+        Trade trade = new Trade();
+        trade.setTradeRef(req.tradeRef());
+        trade.setInstrument(instrument);
+        trade.setCounterparty(counterparty);
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
+        trade.setQuantity(req.quantity());
+        trade.setPrice(req.price());
+        trade.setTradeDate(req.tradeDate());
+        trade.setStatus("PENDING");
+
+        return tradeRepo.save(trade);
+
         //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
         //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
-        throw new UnsupportedOperationException("TICKET-ADV064");
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
@@ -109,16 +133,19 @@ public class TradeService {
     }
 
     /**
-     * TICKET-ADV055 — filters via TradeRepository.findByFilters (JPQL, all
-     * params optional/null-safe). NOTE: the original design here called for
-     * ADV056's Specification-based approach (TradeSpecifications.hasStatus/
-     * tradeDateBetween/hasCounterparty), but that ticket is still an
-     * unimplemented stub with no owner. Wired against the already-complete
-     * ADV055 JPQL query instead so this endpoint isn't blocked waiting on it;
-     * revisit if/when ADV056 lands.
+     * TICKET-ADV056 — composition site for the Specification factories. Each
+     * null filter contributes a no-op predicate, so one code path serves every
+     * combination of query parameters the list endpoint accepts.
      */
     @Transactional(readOnly = true)
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
-        return tradeRepo.findByFilters(from, to, status, counterpartyId, pageable);
+        // Specification.where(...) is deprecated for removal in Spring Data JPA 3.5;
+        // allOf(...) is the supported way to AND a set of specifications together.
+        Specification<Trade> spec = Specification.allOf(
+                tradeDateBetween(from, to),
+                hasStatus(status),
+                forCounterparty(counterpartyId));
+
+        return tradeRepo.findAll(spec, pageable);
     }
 }
