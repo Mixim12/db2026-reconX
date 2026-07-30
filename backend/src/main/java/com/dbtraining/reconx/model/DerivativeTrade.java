@@ -21,6 +21,7 @@ import java.util.Objects;
  */
 public final class DerivativeTrade extends Trade implements TradeType {
 
+    /** CALL (right to buy the underlying) or PUT (right to sell it) at {@link #strike}. */
     public enum OptionType {
         CALL,
         PUT
@@ -55,6 +56,7 @@ public final class DerivativeTrade extends Trade implements TradeType {
         this.counterpartyId = builder.counterpartyId;
     }
 
+    /** A new, empty {@link Builder} — the only way to obtain a {@code DerivativeTrade}. */
     public static Builder builder() {
         return new Builder();
     }
@@ -64,38 +66,51 @@ public final class DerivativeTrade extends Trade implements TradeType {
         return AssetClass.DERIVATIVE;
     }
 
+    /** The identifier of the underlying instrument this option is written on. */
     public String underlying() {
         return underlying;
     }
 
+    /** The strike price, in {@link #currency()}; always strictly positive post-build. */
     public BigDecimal strike() {
         return strike;
     }
 
+    /** The number of contracts/units traded; always strictly positive post-build. */
     public BigDecimal quantity() {
         return quantity;
     }
 
+    /** The expiry date; always strictly after {@link #tradeDate()}. Past expiries are valid historical records. */
     public LocalDate expiry() {
         return expiry;
     }
 
+    /** Whether this is a CALL or a PUT. */
     public OptionType optionType() {
         return optionType;
     }
 
+    /** The currency {@link #strike()} and {@link #notional()} are denominated in. */
     public Currency currency() {
         return currency;
     }
 
+    /** Whether this trade is a BUY or a SELL. */
     public Side side() {
         return side;
     }
 
+    /** The internal id of the counterparty on the other side of the trade. */
     public long counterpartyId() {
         return counterpartyId;
     }
 
+    /**
+     * Two {@code DerivativeTrade}s are equal iff their {@link #tradeRef()} is equal.
+     * @param other the object to compare against
+     * @return {@code true} iff {@code other} is a {@code DerivativeTrade} with the same {@code tradeRef}
+     */
     @Override
     public boolean equals(Object other) {
         return this == other
@@ -103,11 +118,13 @@ public final class DerivativeTrade extends Trade implements TradeType {
                 && tradeRef().equals(derivative.tradeRef()));
     }
 
+    /** {@code tradeRef.hashCode()}, kept in lockstep with {@link #equals(Object)}. */
     @Override
     public int hashCode() {
         return tradeRef().hashCode();
     }
 
+    /** A PII-safe log representation — omits {@link #counterpartyId()}. */
     @Override
     public String toString() {
         // NOTE: counterpartyId and computed settlement notional are deliberately
@@ -192,6 +209,18 @@ public final class DerivativeTrade extends Trade implements TradeType {
             return this;
         }
 
+        /**
+         * Build the immutable {@link DerivativeTrade}, validating that every required
+         * field is set and that all invariants hold.
+         *
+         * @return a fully-constructed, validated {@code DerivativeTrade} — never {@code null}.
+         * @throws NullPointerException  if any required field ({@code tradeRef}, {@code underlying},
+         *                               {@code strike}, {@code quantity}, {@code expiry},
+         *                               {@code optionType}, {@code currency}, {@code side},
+         *                               {@code tradeDate}) was not set.
+         * @throws IllegalStateException if {@code strike} or {@code quantity} is not strictly
+         *                               positive, or {@code expiry} is before {@code tradeDate}.
+         */
         public DerivativeTrade build() {
             Objects.requireNonNull(tradeRef, "tradeRef");
             Objects.requireNonNull(underlying, "underlying");
