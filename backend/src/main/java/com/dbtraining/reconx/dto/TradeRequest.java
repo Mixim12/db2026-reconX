@@ -16,7 +16,7 @@ import java.time.LocalDate;
  * ============================================================================
  */
 public record TradeRequest(
-        @NotNull
+        @NotBlank
         @Pattern(regexp = "^[A-Z]{3}-\\d{8}-\\d{4}$",
                  message = "tradeRef must match AAA-YYYYMMDD-NNNN")
         String tradeRef,
@@ -35,7 +35,7 @@ public record TradeRequest(
         String side,
 
         @NotNull
-        @Positive
+        @DecimalMin(value = "0.0", inclusive = false, message = "quantity must be greater than zero")
         BigDecimal quantity,
 
         @NotNull
@@ -45,4 +45,4 @@ public record TradeRequest(
         @NotNull
         @PastOrPresent(message = "tradeDate must not be in the future")
         LocalDate tradeDate
-)
+) {}
