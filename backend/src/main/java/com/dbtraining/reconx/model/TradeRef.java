@@ -29,10 +29,17 @@ public record TradeRef(String value) {
         }
     }
 
+    /**
+     * @param value the raw reference string, format {@code AAA-YYYYMMDD-NNNN}
+     * @return a new, validated {@code TradeRef} wrapping {@code value}
+     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws IllegalArgumentException if {@code value} does not match the expected format
+     */
     public static TradeRef of(String value) {
         return new TradeRef(value);
     }
 
+    /** The underlying reference string, unchanged. */
     @Override
     public String toString() {
         return value;

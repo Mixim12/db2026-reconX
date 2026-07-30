@@ -1,19 +1,61 @@
+/* TICKET-ADV099 — Design tokens (CSS custom properties) & component styles */
 /* TICKET-ADV101 / ADV102 — CSS custom properties + data-theme overrides */
 :root {
-  --color-primary: #003366;
-  --color-success: #28a745;
-  --color-warning: #ffc107;
-  --color-danger:  #dc3545;
-  --color-bg:      #ffffff;
-  --color-text:    #1a1a1a;
-  --color-surface: #f5f5f5;
-  --color-border:  #d4d4d4;
+  /* Colors */
+  --color-primary:      #003366;
+  --color-gold:         #C8A951;
+  --color-slate:        #2E5FA3;
+  --color-success:      #28a745;
+  --color-warning:      #ffc107;
+  --color-danger:       #dc3545;
+  --color-bg:           #ffffff;
+  --color-text:         #1a1a1a;
+  --color-surface:      #f5f5f5;
+  --color-border:       #d4d4d4;
+  --color-white:        #ffffff;
+  --color-transparent:  transparent;
+
+  /* Spacing Scale (4px base) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --radius:  4px;
-  --font-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Layout Dimensions & Border Widths */
+  --header-height:          64px;
+  --footer-height:          40px;
+  --sidebar-width-lg:       240px;
+  --sidebar-width-md:       180px;
+  --form-max-width:         360px;
+  --stat-grid-min-width:    180px;
+  --stat-card-min-width-lg: 200px;
+  --border-width-sm:        1px;
+  --border-width-md:        2px;
+  --border-width-lg:        4px;
+
+  /* Radius Tokens */
+  --radius-sm:   2px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-full: 9999px;
+  --radius:      var(--radius-md); /* Alias for backward compatibility */
+
+  /* Box Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Typography & Accessibility */
+  --font-base:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-sm:    13px;
+  --font-size-base:  14px;
+  --font-size-md:    18px;
+  --font-size-lg:    22px;
+  --font-size-xl:    24px;
+  --outline-offset:  2px;
 }
 
 [data-theme="dark"] {
@@ -21,6 +63,9 @@
   --color-text:    #f5f5f5;
   --color-surface: #2a2a2a;
   --color-border:  #3a3a3a;
+  --shadow-sm:     0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md:     0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg:     0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
 }
 
 /* TICKET-ADV104 — respect reduced-motion preference */
@@ -38,43 +83,115 @@ body {
 }
 
 /* TICKET-ADV098 — page shell layout */
-.layout { display: grid; grid-template-rows: 64px 1fr; min-height: 100vh; }
-.layout__header { display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-4); background: var(--color-primary); color: #fff; }
+.layout { display: grid; grid-template-rows: var(--header-height) 1fr; min-height: 100vh; }
+.layout__header { display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-4); background: var(--color-primary); color: var(--color-white); }
 .layout__nav    { display: flex; gap: var(--space-3); margin-left: auto; }
-.layout__nav a  { color: #fff; text-decoration: none; }
+.layout__nav a  { color: var(--color-white); text-decoration: none; }
 .layout__nav a:hover { text-decoration: underline; }
 .layout__main   { padding: var(--space-4); }
 
 .loader { padding: var(--space-4); color: var(--color-text); }
 
 /* TICKET-ADV101 / ADV110 — BEM stat cards + trade cards */
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
-.stat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-3); }
-.stat-card h3 { margin: 0; font-size: 14px; color: var(--color-text); opacity: 0.7; }
-.stat-card p  { margin: var(--space-2) 0 0; font-size: 24px; font-weight: 600; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-3) 0; }
+.stat-card { background: var(--color-surface); border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); box-shadow: var(--shadow-sm); }
+.stat-card h3 { margin: 0; font-size: var(--font-size-base); color: var(--color-text); opacity: 0.7; }
+.stat-card p  { margin: var(--space-2) 0 0; font-size: var(--font-size-xl); font-weight: 600; }
+
+/* ============================================================================
+   TICKET-ADV103 — Responsive Breakpoints (Desktop >=1025px, Tablet <=1024px, Mobile <=640px)
+   ============================================================================ */
+
+@media (min-width: 1025px) {
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+  .layout__header { padding: 0 var(--space-2); gap: var(--space-2); }
+  .layout__nav { gap: var(--space-2); }
+  .layout__nav a { font-size: var(--font-size-sm); }
+  .layout__main { padding: var(--space-2); }
+  .stat-grid { grid-template-columns: 1fr; }
+  .stat-card h3 { font-size: var(--font-size-sm); }
+  .stat-card p { font-size: var(--font-size-md); }
+  .login-form, .trade-form { max-width: 100%; }
+}
+
+/* TICKET-ADV101 — trade feed area & slide-in animation */
+#trade-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.trade-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  animation: slide-in 0.3s ease-out;
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-card strong {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.trade-card span {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+}
+
+.trade-card--matched { border-left: var(--border-width-lg) solid var(--color-success); }
+.trade-card--break   { border-left: var(--border-width-lg) solid var(--color-danger); }
+.trade-card--pending { border-left: var(--border-width-lg) solid var(--color-warning); }
+.trade-card--warn    { border-left: var(--border-width-lg) solid var(--color-warning); }
+
+@keyframes slide-in {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
 
 /* TICKET-ADV114 — data-table styling */
-.data-table { display: flex; flex-direction: column; border: 1px solid var(--color-border); border-radius: var(--radius); }
+.data-table { display: flex; flex-direction: column; border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
 .data-table__header { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--color-surface); }
-.data-table__th { padding: var(--space-2) var(--space-3); border: none; background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
+.data-table__th { padding: var(--space-2) var(--space-3); border: none; background: var(--color-transparent); color: var(--color-text); text-align: left; cursor: pointer; }
 .data-table__th--active { font-weight: 700; }
-.data-table__row { display: grid; grid-template-columns: repeat(5, 1fr); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); }
+.data-table__row { display: grid; grid-template-columns: repeat(5, 1fr); padding: var(--space-2) var(--space-3); border-top: var(--border-width-sm) solid var(--color-border); }
 .data-table__pagination { display: flex; gap: var(--space-3); padding: var(--space-2); justify-content: center; align-items: center; }
 
 /* TICKET-ADV123 / ADV072 — form styling */
-.login-form, .trade-form { display: grid; gap: var(--space-2); max-width: 360px; }
+.login-form, .trade-form { display: grid; gap: var(--space-2); max-width: var(--form-max-width); }
 .login-form label, .trade-form label { display: grid; gap: var(--space-1); }
 .login-form input, .trade-form input, .trade-form select {
-  padding: var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius);
+  padding: var(--space-2); border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md);
   background: var(--color-bg); color: var(--color-text);
 }
-.form-error { color: var(--color-danger); font-size: 13px; margin: 0; }
+.form-error { color: var(--color-danger); font-size: var(--font-size-sm); margin: 0; }
 
-button { padding: var(--space-2) var(--space-3); border: 1px solid var(--color-primary); background: var(--color-primary); color: #fff; border-radius: var(--radius); cursor: pointer; }
+button { padding: var(--space-2) var(--space-3); border: var(--border-width-sm) solid var(--color-primary); background: var(--color-primary); color: var(--color-white); border-radius: var(--radius-md); cursor: pointer; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* TICKET-ADV113 — error boundary fallback */
-.error-fallback { padding: var(--space-4); border: 1px solid var(--color-danger); border-radius: var(--radius); background: var(--color-surface); }
+.error-fallback { padding: var(--space-4); border: var(--border-width-sm) solid var(--color-danger); border-radius: var(--radius-md); background: var(--color-surface); }
 
 /* TICKET-ADV109 — keyboard focus visibility */
-:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+:focus-visible { outline: var(--border-width-md) solid var(--color-primary); outline-offset: var(--outline-offset); }

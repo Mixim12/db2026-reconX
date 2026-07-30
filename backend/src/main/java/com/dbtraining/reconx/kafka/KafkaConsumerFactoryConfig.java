@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.SystemAlert;
+import com.dbtraining.reconx.dto.TradeEvent;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -49,6 +50,20 @@ public class KafkaConsumerFactoryConfig {
                 jsonConsumerFactory(kafkaProperties, SystemAlert.class);
 
         ConcurrentKafkaListenerContainerFactory<String, SystemAlert> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setCommonErrorHandler(errorHandler);
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TradeEvent> tradeEventListenerContainerFactory(
+            KafkaProperties kafkaProperties,
+            DefaultErrorHandler errorHandler) {
+        ConsumerFactory<String, TradeEvent> consumerFactory =
+                jsonConsumerFactory(kafkaProperties, TradeEvent.class);
+
+        ConcurrentKafkaListenerContainerFactory<String, TradeEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         factory.setCommonErrorHandler(errorHandler);
