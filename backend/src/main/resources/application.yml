@@ -32,9 +32,8 @@ spring:
 
   # ADV081-ADV082 — Caffeine cache config; per-cache spec overrides the global one.
   cache:
+    type: caffeine
     cache-names: instruments,counterparties
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=5m
 
   # ADV128 — Kafka producer/consumer defaults. Topics are created at startup
   # by KafkaTopicsConfig (see com.dbtraining.reconx.kafka.KafkaTopicsConfig).
