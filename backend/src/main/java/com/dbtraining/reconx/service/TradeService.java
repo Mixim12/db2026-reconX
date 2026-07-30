@@ -83,10 +83,17 @@ public class TradeService {
         trade.setTradeDate(req.tradeDate());
         trade.setStatus("PENDING");
 
-        return tradeRepo.save(trade);
+        Trade saved = tradeRepo.save(trade);
 
-        //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
-        //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
+        metrics.incrementTradeCreated();
+
+        metrics.recordTradeValue(
+                saved.getQuantity()
+                        .multiply(saved.getPrice())
+                        .doubleValue()
+        );
+
+        return saved;
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
@@ -118,9 +125,28 @@ public class TradeService {
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
-        // TODO(TICKET-ADV066): load, setStatus(status), save, publish TRADE_UPDATED
-        //   with the new status in the "after" slot of the event.
-        throw new UnsupportedOperationException("TICKET-ADV066");
+        Trade trade = tradeRepo.findById(id)
+                .orElseThrow(() ->
+                        new TradeNotFoundException(String.valueOf(id))
+                );
+
+        String previousStatus = trade.getStatus();
+
+        trade.setStatus(status);
+
+        Trade saved = tradeRepo.save(trade);
+
+        events.publish(new TradeEvent(
+                UUID.randomUUID(),
+                saved.getTradeRef(),
+                TradeEvent.EventType.TRADE_UPDATED,
+                Instant.now(),
+                actor,
+                previousStatus,
+                saved.getStatus()
+        ));
+
+        return saved;
     }
 
     public void softDelete(Long id, String actor) {
