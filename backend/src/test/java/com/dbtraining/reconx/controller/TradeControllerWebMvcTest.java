@@ -92,4 +92,12 @@ class TradeControllerWebMvcTest {
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.tradeRef").value("AAA-20260730-0001"));
     }
+
+    @Test
+    void testCreateTrade_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isUnauthorized());
+    }
 }
