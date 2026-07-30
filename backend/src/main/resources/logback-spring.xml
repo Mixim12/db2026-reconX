@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ============================================================================
+ TICKET-ADV061 — Structured logging with MDC
+
+ WHAT:    Profile-scoped logging: a human-readable console pattern under `dev`,
+          JSON via LogstashEncoder under `uat`/`prod`.
+ HOW:     <springProfile> is a logback-spring.xml-only extension, which is why
+          this file is named logback-spring.xml rather than logback.xml — plain
+          logback.xml is read before Spring exists and cannot see profiles.
+ WHY:     Humans read dev logs by eye; uat/prod logs are shipped to a collector
+          that indexes MDC keys, so correlationId/tradeRef must be first-class
+          JSON fields there instead of characters inside a message string.
+ OBSERVE: dev  -> "... foo-123 TRD-0001 c.d.r.controller.TradeController - ..."
+          uat  -> {"correlationId":"foo-123","service":"reconx-api", ...}
+ ============================================================================
+-->
+<configuration>
+
+    <springProfile name="dev">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %X{correlationId:-} %X{tradeRef:-} %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <springProfile name="uat,prod">
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdc>true</includeMdc>
+                <customFields>{"service":"reconx-api"}</customFields>
+            </encoder>
+        </appender>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>

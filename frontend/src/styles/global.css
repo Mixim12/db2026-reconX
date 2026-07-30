@@ -93,10 +93,82 @@ body {
 .loader { padding: var(--space-4); color: var(--color-text); }
 
 /* TICKET-ADV101 / ADV110 — BEM stat cards + trade cards */
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--stat-card-min-width-lg), 1fr)); gap: var(--space-3); margin: var(--space-3) 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-3) 0; }
 .stat-card { background: var(--color-surface); border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); box-shadow: var(--shadow-sm); }
 .stat-card h3 { margin: 0; font-size: var(--font-size-base); color: var(--color-text); opacity: 0.7; }
 .stat-card p  { margin: var(--space-2) 0 0; font-size: var(--font-size-xl); font-weight: 600; }
+
+/* ============================================================================
+   TICKET-ADV103 — Responsive Breakpoints (Desktop >=1025px, Tablet <=1024px, Mobile <=640px)
+   ============================================================================ */
+
+@media (min-width: 1025px) {
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1024px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+  .layout__header { padding: 0 var(--space-2); gap: var(--space-2); }
+  .layout__nav { gap: var(--space-2); }
+  .layout__nav a { font-size: var(--font-size-sm); }
+  .layout__main { padding: var(--space-2); }
+  .stat-grid { grid-template-columns: 1fr; }
+  .stat-card h3 { font-size: var(--font-size-sm); }
+  .stat-card p { font-size: var(--font-size-md); }
+  .login-form, .trade-form { max-width: 100%; }
+}
+
+/* TICKET-ADV101 — trade feed area & slide-in animation */
+#trade-feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.trade-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  animation: slide-in 0.3s ease-out;
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-card strong {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}
+
+.trade-card span {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  opacity: 0.85;
+}
+
+.trade-card--matched { border-left: var(--border-width-lg) solid var(--color-success); }
+.trade-card--break   { border-left: var(--border-width-lg) solid var(--color-danger); }
+.trade-card--pending { border-left: var(--border-width-lg) solid var(--color-warning); }
+.trade-card--warn    { border-left: var(--border-width-lg) solid var(--color-warning); }
+
+@keyframes slide-in {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
 
 /* TICKET-ADV114 — data-table styling */
 .data-table { display: flex; flex-direction: column; border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }

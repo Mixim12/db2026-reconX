@@ -6,10 +6,13 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('theme-toggle');
-    btn && btn.addEventListener('click', () => {
+    if (!btn) return;
+    btn.setAttribute('aria-pressed', String(stored === 'dark'));
+    btn.addEventListener('click', () => {
       const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
       document.documentElement.dataset.theme = next;
       localStorage.setItem('reconx-theme', next);
+      btn.setAttribute('aria-pressed', String(next === 'dark'));
     });
   });
 })();

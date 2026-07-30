@@ -5,5 +5,8 @@ package com.dbtraining.reconx.model;
  * Kept as a tiny enum rather than a String so a typo can't survive compile.
  */
 public enum Side {
-    BUY, SELL
+    /** We acquire the instrument. */
+    BUY,
+    /** We dispose of the instrument. */
+    SELL
 }

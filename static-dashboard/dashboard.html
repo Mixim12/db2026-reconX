@@ -11,6 +11,7 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
   <meta charset="utf-8" />
   <title>ReconX (static) — Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="js/theme.js"></script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="app-shell">
@@ -21,7 +22,7 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
       <a href="trades.html">Trades</a>
       <a href="recon.html">Recon</a>
     </nav>
-    <button id="theme-toggle" aria-label="Toggle light/dark theme">🌗</button>
+    <button id="theme-toggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌗</button>
   </header>
 
   <div class="app-body">
@@ -35,6 +36,8 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
     </aside>
 
     <main class="app-main" role="main">
+      <p class="alert alert--danger">Unmatched trades &gt; 0</p>
+
       <section aria-labelledby="kpi">
         <h2 id="kpi">Today at a glance</h2>
         <section class="dashboard-grid">
@@ -46,8 +49,32 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
 
       <section aria-labelledby="feed">
         <h2 id="feed">Live trade feed</h2>
-        <!-- TICKET-ADV100 aria-live so screen readers announce new trades -->
-        <div id="trade-feed" role="status" aria-live="polite" aria-atomic="false"></div>
+        <!-- TICKET-ADV100 / ADV101 — section id="trade-feed" with aria-live for real-time announcements -->
+        <section id="trade-feed" role="status" aria-live="polite" aria-atomic="false">
+          <!-- Sample .trade-card elements for DevTools testing:
+          <article class="trade-card trade-card--matched">
+            <strong>EQU-20260603-0001</strong>
+            <span> SAP.DE </span>
+            <span> qty=1000 </span>
+            <span> price=125.50 </span>
+            <span> [MATCHED]</span>
+          </article>
+          <article class="trade-card trade-card--break">
+            <strong>EQU-20260603-0002</strong>
+            <span> AAPL </span>
+            <span> qty=500 </span>
+            <span> price=178.20 </span>
+            <span> [BREAK]</span>
+          </article>
+          <article class="trade-card trade-card--pending">
+            <strong>FX-20260603-0001</strong>
+            <span> EUR/USD </span>
+            <span> qty=1000000 </span>
+            <span> price=1.0852 </span>
+            <span> [PENDING]</span>
+          </article>
+          -->
+        </section>
       </section>
     </main>
   </div>
@@ -56,7 +83,6 @@ TICKET-ADV100 — ARIA roles + aria-live for the trade feed
     <small>ReconX TDI 2026 · static dashboard (Day 7)</small>
   </footer>
 
-  <script src="js/theme.js"></script>
   <script src="js/sse.js"></script>
 </body>
 </html>
