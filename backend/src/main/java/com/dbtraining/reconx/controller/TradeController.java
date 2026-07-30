@@ -91,12 +91,20 @@ public class TradeController {
 
     @PatchMapping("/{id}/status")
     @Operation(summary = "Update only the status field")
-    public TradeResponse updateStatus(@PathVariable Long id,
-                                      @RequestBody Map<String, String> body,
-                                      @AuthenticationPrincipal Object principal) {
-        // TODO(TICKET-ADV066): read body.get("status") and call
-        //   service.updateStatus(id, status, actor). Return mapper.toResponse(saved).
-        throw new UnsupportedOperationException("TICKET-ADV066");
+    public TradeResponse updateStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal Object principal) {
+
+        String status = body.get("status");
+
+        String actor = principal == null
+                ? "system"
+                : principal.toString();
+
+        Trade updatedTrade = service.updateStatus(id, status, actor);
+
+        return mapper.toResponse(updatedTrade);
     }
 
     @DeleteMapping("/{id}")

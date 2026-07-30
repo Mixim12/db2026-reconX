@@ -33,7 +33,9 @@ public enum ReconciliationRule {
         this.qtyToleranceAbs   = qtyToleranceAbs;
     }
 
+    /** The maximum allowed price drift, as a fraction (e.g. {@code 0.01} for 1%). */
     public BigDecimal priceTolerancePct() { return priceTolerancePct; }
+    /** The maximum allowed absolute quantity drift. */
     public BigDecimal qtyToleranceAbs()   { return qtyToleranceAbs; }
 
     /**
@@ -63,6 +65,10 @@ public enum ReconciliationRule {
      * never {@code equals}, so {@code 100.00} and {@code 100.0} are treated
      * as the same value despite their different scales.
      *
+     * @param internalPrice the price on the internal (book of record) side
+     * @param internalQty   the quantity on the internal side
+     * @param externalPrice the price on the external (counterparty/custodian) side
+     * @param externalQty   the quantity on the external side
      * @return true if BOTH the price diff (as %) AND the qty diff (as abs)
      *         are within tolerance.
      */

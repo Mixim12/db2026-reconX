@@ -47,18 +47,29 @@ public final class EquityTrade extends Trade implements TradeType {
         this.counterpartyId = b.counterpartyId;
     }
 
+    /** A new, empty {@link Builder} — the only way to obtain an {@code EquityTrade}. */
     public static Builder builder() { return new Builder(); }
 
     @Override public AssetClass assetClass(){ return AssetClass.EQUITY; }
 
+    /** The exchange ticker/symbol this trade was struck against. */
     public String instrumentSymbol() { return instrumentSymbol; }
+    /** The number of shares traded; always strictly positive post-build. */
     public BigDecimal quantity()     { return quantity; }
+    /** The price per share in {@link #currency()}; always strictly positive post-build. */
     public BigDecimal price()        { return price; }
+    /** The settlement currency for {@link #price()} and {@link #notional()}. */
     public Currency currency()       { return currency; }
+    /** Whether this trade is a BUY or a SELL. */
     public Side side()               { return side; }
+    /** The internal id of the counterparty on the other side of the trade. */
     public long counterpartyId()     { return counterpartyId; }
 
-    /** equals: two EquityTrades are equal iff their tradeRef is equal. */
+    /**
+     * Two {@code EquityTrade}s are equal iff their {@link #tradeRef()} is equal.
+     * @param o the object to compare against
+     * @return {@code true} iff {@code o} is an {@code EquityTrade} with the same {@code tradeRef}
+     */
     @Override
     public boolean equals(Object o) {
         return this == o
@@ -66,11 +77,13 @@ public final class EquityTrade extends Trade implements TradeType {
                 && tradeRef().equals(other.tradeRef()));
     }
 
+    /** {@code tradeRef.hashCode()}, kept in lockstep with {@link #equals(Object)}. */
     @Override
     public int hashCode() {
         return tradeRef().hashCode();
     }
 
+    /** A PII-safe log representation — omits {@link #counterpartyId()}. */
     @Override
     public String toString() {
         // NOTE: counterpartyId and computed settlement notional are deliberately
@@ -107,6 +120,18 @@ public final class EquityTrade extends Trade implements TradeType {
         public Builder tradeDate(LocalDate v)         { this.tradeDate = v;       return this; }
         public Builder counterpartyId(long v)         { this.counterpartyId = v;  return this; }
 
+        /**
+         * Build the immutable {@link EquityTrade}, validating that every required
+         * field is set and that all invariants hold.
+         *
+         * @return a fully-constructed, validated {@code EquityTrade} — never {@code null}.
+         * @throws NullPointerException  if any required field ({@code tradeRef},
+         *                               {@code instrumentSymbol}, {@code quantity},
+         *                               {@code price}, {@code currency}, {@code side},
+         *                               {@code tradeDate}) was not set.
+         * @throws IllegalStateException if {@code quantity} or {@code price} is not
+         *                               strictly positive.
+         */
         public EquityTrade build() {
             Objects.requireNonNull(tradeRef,         "tradeRef");
             Objects.requireNonNull(instrumentSymbol, "instrumentSymbol");
