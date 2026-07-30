@@ -3,13 +3,15 @@
   const feed = document.getElementById('trade-feed');
   if (!feed) return;
 
-  // Hardcoded demo events for the static dashboard (no backend required).
-  // Replace with: const sse = new EventSource('/api/v1/trades/stream');
-  const demoEvents = [
-    { tradeRef: 'EQU-20260603-0001', symbol: 'SAP.DE',  qty: 1000, price: 125.50, status: 'MATCHED' },
-    { tradeRef: 'FX-20260603-0001',  symbol: 'EUR/USD', qty: 1_000_000, price: 1.0852, status: 'PENDING' },
-    { tradeRef: 'EQU-20260603-0002', symbol: 'AAPL',    qty: 500,  price: 178.20, status: 'BREAK' },
-  ];
+  const STREAM_URL = '/api/v1/trades/stream';
+  let sse = null;
+
+  function updateConnectionBadge(text, variant) {
+    const badge = document.getElementById('sse-status');
+    if (!badge) return;
+    badge.textContent = text;
+    badge.className = 'badge badge--' + variant;
+  }
 
   function prepend(trade) {
     const el = document.createElement('article');
@@ -23,5 +25,23 @@
     feed.prepend(el);
   }
 
-  demoEvents.forEach((e, i) => setTimeout(() => prepend(e), 500 * i));
+  function connect() {
+    sse = new EventSource(STREAM_URL);
+
+    sse.onopen = () => updateConnectionBadge('Live', 'live');
+
+    sse.onmessage = (event) => {
+      try {
+        prepend(JSON.parse(event.data));
+      } catch (err) {
+        console.error('Invalid SSE payload', err);
+      }
+    };
+
+    sse.onerror = () => updateConnectionBadge('Reconnecting…', 'reconnecting');
+  }
+
+  window.addEventListener('beforeunload', () => sse?.close());
+
+  connect();
 })();
