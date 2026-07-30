@@ -76,16 +76,8 @@ public class SecurityConfig {
                 .build();
     }
 
-    /**
-     * TICKET-ADV072 — needed to verify the BCrypt hashes seeded in 008-seed.xml.
-     * The filter chain and the RBAC matchers stay with TICKET-ADV073 / ADV074.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    // TODO(TICKET-ADV073): register JwtAuthenticationFilter before
-    //                     UsernamePasswordAuthenticationFilter.
-    // TODO(TICKET-ADV074): add @EnableMethodSecurity and the RBAC matchers.
 }

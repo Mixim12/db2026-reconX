@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.kafka;
 
+import com.dbtraining.reconx.dto.SystemAlert;
 import com.dbtraining.reconx.dto.TradeEvent;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
@@ -31,10 +32,29 @@ import java.util.Map;
  *          at boot. system-alerts in particular cannot share the
  *          TradeEvent-typed default factory - it needs its own
  *          deserialization target.
+ *
+ * NOTE: this file is expected to collide trivially with the
+ * tradeEventListenerContainerFactory added in TICKET-ADV131's PR (#40) -
+ * both add one @Bean method to the same class. Whichever PR merges second
+ * just re-adds its bean method alongside the other's.
  * ============================================================================
  */
 @Configuration
 public class KafkaConsumerFactoryConfig {
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, SystemAlert> systemAlertListenerContainerFactory(
+            KafkaProperties kafkaProperties,
+            DefaultErrorHandler errorHandler) {
+        ConsumerFactory<String, SystemAlert> consumerFactory =
+                jsonConsumerFactory(kafkaProperties, SystemAlert.class);
+
+        ConcurrentKafkaListenerContainerFactory<String, SystemAlert> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setCommonErrorHandler(errorHandler);
+        return factory;
+    }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, TradeEvent> tradeEventListenerContainerFactory(

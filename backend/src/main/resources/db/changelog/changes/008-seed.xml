@@ -38,7 +38,10 @@
 
     <changeSet id="008-seed-instruments" author="trainer" context="dev,test">
         <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM instruments</sqlCheck>
+            <and>
+                <dbms type="postgresql"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM instruments</sqlCheck>
+            </and>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
             INSERT INTO instruments (symbol, name, asset_class, currency, isin, metadata) VALUES
