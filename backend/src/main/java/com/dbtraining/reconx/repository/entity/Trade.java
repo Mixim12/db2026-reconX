@@ -2,6 +2,7 @@ package com.dbtraining.reconx.repository.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.envers.Audited;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -9,30 +10,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 
 /**
  * ============================================================================
  * TICKET-ADV050 — Trade JPA entity (with @ManyToOne, @CreatedDate, @LastModifiedDate)
- * TICKET-ADV052 — Hibernate Envers @Audited (auto rev table — see Day 4 guide)
- * TICKET-ADV067 — Soft delete via @SQLRestriction (filters deleted rows on SELECT)
- *
- * WHAT:    Persistent representation of a trade. Maps to the trades table
- *          declared in 002-schema.xml.
- * HOW:     ManyToOne LAZY to Counterparty and Instrument keeps the row
- *          fetch tight; the service layer asks for the relation only when
- *          it needs it.
- * WHY:     This is the durable record. The domain {@code TradeType} sealed
- *          hierarchy is the in-memory shape used by reconciliation; this
- *          entity is the on-disk shape used by JPA. The mapper between the
- *          two lives in {@code TradeMapper}.
- * OBSERVE: After a save, the trade row has created_at set by Spring Data,
- *          and a row appears in the Envers revision table.
+ * TICKET-ADV052 — Hibernate Envers @Audited
+ * TICKET-ADV067 — Soft delete via @SQLRestriction
  * ============================================================================
  */
 @Entity
-@Table(name = "trades")
+@Table(name = "trades", indexes = {
+    @Index(name = "idx_trades_trade_date", columnList = "trade_date"),
+    @Index(name = "idx_trades_status",     columnList = "status")
+})
 @EntityListeners(AuditingEntityListener.class)
-// @org.hibernate.envers.Audited                  // re-enable when envers tables are migrated
+@Audited
 @SQLRestriction("deleted_at IS NULL")
 public class Trade {
 
@@ -44,12 +37,12 @@ public class Trade {
     private String tradeRef;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "instrument_id")
-    private Instrument instrument;
+    @JoinColumn(name = "counterparty_id", nullable = false)
+    private Counterparty counterparty;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "counterparty_id")
-    private Counterparty counterparty;
+    @JoinColumn(name = "instrument_id", nullable = false)
+    private Instrument instrument;
 
     @Column(name = "asset_class", nullable = false, length = 20)
     private String assetClass;
@@ -73,7 +66,7 @@ public class Trade {
     private Instant deletedAt;
 
     @CreatedDate
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @LastModifiedDate
@@ -99,6 +92,7 @@ public class Trade {
     public Instant getCreatedAt()        { return createdAt; }
     public Instant getModifiedAt()       { return modifiedAt; }
 
+    public void setId(Long id)                { this.id = id; }
     public void setTradeRef(String v)         { this.tradeRef = v; }
     public void setInstrument(Instrument v)   { this.instrument = v; }
     public void setCounterparty(Counterparty v){ this.counterparty = v; }
@@ -108,4 +102,18 @@ public class Trade {
     public void setPrice(BigDecimal v)        { this.price = v; }
     public void setTradeDate(LocalDate v)     { this.tradeDate = v; }
     public void setStatus(String v)           { this.status = v; }
+    public void setCreatedAt(Instant v)       { this.createdAt = v; }
+    public void setModifiedAt(Instant v)      { this.modifiedAt = v; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Trade other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }
