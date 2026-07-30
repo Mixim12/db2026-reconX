@@ -194,4 +194,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .error-fallback { padding: var(--space-4); border: var(--border-width-sm) solid var(--color-danger); border-radius: var(--radius-md); background: var(--color-surface); }
 
 /* TICKET-ADV109 — keyboard focus visibility */
-:focus-visible { outline: var(--border-width-md) solid var(--color-primary); outline-offset: var(--outline-offset); }
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible {
+  outline: var(--border-width-md) solid var(--color-primary);
+  outline-offset: var(--outline-offset);
+  border-radius: var(--radius-sm);
+}
