@@ -159,6 +159,12 @@ live in HttpOnly cookies for 7 days.
 
 ---
 
+## API Versioning
+
+Breaking changes ship under a new version segment (e.g., `/api/v2/`); the old segment keeps working until its `Sunset` date. Deprecated endpoints will return a `410 Gone` along with standard `Deprecation`, `Sunset`, and `Link` (to successor) headers.
+
+---
+
 ## Deploy to the demo laptop (Day 10)
 
 The deploy story is **GitHub Actions builds + pushes Docker images to GHCR;
