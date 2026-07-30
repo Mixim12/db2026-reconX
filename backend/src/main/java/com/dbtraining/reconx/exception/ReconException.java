@@ -21,4 +21,6 @@ public abstract class ReconException extends RuntimeException {
      * @param cause   the underlying exception that triggered this one
      */
     protected ReconException(String message, Throwable cause) { super(message, cause); }
+
+    public String getReconBreakId() { return null; }
 }
