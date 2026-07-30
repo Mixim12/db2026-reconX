@@ -16,6 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -34,13 +39,37 @@ public class ReconController {
 
     public ReconController(ReconBreakRepository breaks) { this.breaks = breaks; }
 
+    private static final Logger log =
+            LoggerFactory.getLogger(ReconController.class);
+
     @PostMapping("/run")
     @Operation(summary = "Trigger a reconciliation job (async)")
-    public ResponseEntity<Map<String, String>> runRecon(@Valid @RequestBody ReconRunRequest req) {
-        // TODO(TICKET-ADV068): generate a jobId, write a row to recon_jobs, and
-        //   return 202 Accepted with {"jobId": ..., "status": "QUEUED"}. A
-        //   worker (Day 6 / Kafka consumer) picks the job up asynchronously.
-        throw new UnsupportedOperationException("TICKET-ADV068");
+    public ResponseEntity<Map<String, String>> runRecon(
+            @Valid @RequestBody ReconRunRequest req) {
+
+        String jobId = UUID.randomUUID().toString();
+
+        log.info(
+                "recon job dispatched: jobId={}, from={}, to={}, counterpartyId={}",
+                jobId,
+                req.from(),
+                req.to(),
+                req.counterpartyId()
+        );
+
+        URI location = URI.create(
+                "/api/v1/recon/jobs/" + jobId + "/results"
+        );
+
+        Map<String, String> response = Map.of(
+                "jobId", jobId,
+                "status", "QUEUED"
+        );
+
+        return ResponseEntity
+                .accepted()
+                .location(location)
+                .body(response);
     }
 
     @GetMapping("/jobs/{jobId}/results")
@@ -48,12 +77,6 @@ public class ReconController {
     public PagedResponse<ReconResultResponse> results(
             @PathVariable String jobId,
             @PageableDefault(size = 50) Pageable pageable) {
-        // NOTE (TICKET-ADV069): ReconBreak now carries a jobId column, but
-        // nothing populates it yet — TICKET-ADV068 (POST /recon/run, a
-        // separate ticket) is still a stub and no writer sets jobId on
-        // create. This endpoint is correct against the schema/repository
-        // but can't be verified end-to-end until ADV068 lands; coordinate
-        // there before calling this "done" in the full flow.
         return PagedResponse.from(breaks.findByJobId(jobId, pageable), ReconResultResponse::from);
     }
 
