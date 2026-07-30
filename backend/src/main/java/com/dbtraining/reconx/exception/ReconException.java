@@ -14,7 +14,12 @@ package com.dbtraining.reconx.exception;
  * ============================================================================
  */
 public abstract class ReconException extends RuntimeException {
+    /** @param message a human-readable description of the failure */
     protected ReconException(String message) { super(message); }
+    /**
+     * @param message a human-readable description of the failure
+     * @param cause   the underlying exception that triggered this one
+     */
     protected ReconException(String message, Throwable cause) { super(message, cause); }
 
     public String getReconBreakId() { return null; }

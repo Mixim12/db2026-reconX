@@ -41,18 +41,31 @@ public final class BondTrade extends Trade implements TradeType {
         this.counterpartyId = b.counterpartyId;
     }
 
+    /** A new, empty {@link Builder} — the only way to obtain a {@code BondTrade}. */
     public static Builder builder() { return new Builder(); }
 
     @Override public AssetClass assetClass() { return AssetClass.BOND; }
 
+    /** The 12-character ISIN identifying the bond. */
     public String isin()              { return isin; }
+    /** The principal repaid at {@link #maturityDate()}, in {@link #currency()}. */
     public BigDecimal faceValue()     { return faceValue; }
+    /** The annual coupon rate, expressed as a fraction (e.g. {@code 0.05} for 5%). */
     public BigDecimal couponRate()    { return couponRate; }
+    /** The date the bond redeems; always strictly after {@link #tradeDate()}. */
     public LocalDate maturityDate()   { return maturityDate; }
+    /** The currency {@link #faceValue()} and {@link #couponRate()} are denominated in. */
     public Currency currency()        { return currency; }
+    /** Whether this trade is a BUY or a SELL. */
     public Side side()                { return side; }
+    /** The internal id of the counterparty on the other side of the trade. */
     public long counterpartyId()      { return counterpartyId; }
 
+    /**
+     * Two {@code BondTrade}s are equal iff their {@link #tradeRef()} is equal.
+     * @param o the object to compare against
+     * @return {@code true} iff {@code o} is a {@code BondTrade} with the same {@code tradeRef}
+     */
     @Override
     public boolean equals(Object o) {
         return this == o
@@ -60,11 +73,13 @@ public final class BondTrade extends Trade implements TradeType {
                 && tradeRef().equals(other.tradeRef()));
     }
 
+    /** {@code tradeRef.hashCode()}, kept in lockstep with {@link #equals(Object)}. */
     @Override
     public int hashCode() {
         return tradeRef().hashCode();
     }
 
+    /** A PII-safe log representation — omits {@link #counterpartyId()}. */
     @Override
     public String toString() {
         // NOTE: counterpartyId and any settlement or issuer identifiers are
@@ -100,6 +115,17 @@ public final class BondTrade extends Trade implements TradeType {
         public Builder tradeDate(LocalDate v)      { this.tradeDate = v; return this; }
         public Builder counterpartyId(long v)      { this.counterpartyId = v; return this; }
 
+        /**
+         * Build the immutable {@link BondTrade}, validating that every required
+         * field is set and that all invariants hold.
+         *
+         * @return a fully-constructed, validated {@code BondTrade} — never {@code null}.
+         * @throws NullPointerException  if any required field ({@code tradeRef}, {@code isin},
+         *                               {@code faceValue}, {@code couponRate}, {@code maturityDate},
+         *                               {@code currency}, {@code side}, {@code tradeDate}) was not set.
+         * @throws IllegalStateException if {@code maturityDate} is not strictly after
+         *                               {@code tradeDate}.
+         */
         public BondTrade build() {
             Objects.requireNonNull(tradeRef,     "tradeRef");
             Objects.requireNonNull(isin,         "isin");

@@ -56,13 +56,37 @@ public class TradeService {
     }
 
     public Trade create(TradeRequest req, String actor) {
-        // TODO(TICKET-ADV064): reject duplicate tradeRef via DuplicateTradeRefException,
-        //   build a new Trade with instrument + counterparty looked up from
-        //   their repos (throw TradeNotFoundException on miss), status = "PENDING",
-        //   save, then:
+
+        tradeRepo.findByTradeRef(req.tradeRef())
+                .ifPresent(existing -> {
+                    throw new DuplicateTradeRefException(req.tradeRef());
+                });
+
+        var instrument = instRepo.findById(req.instrumentId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "instrument " + req.instrumentId()
+                ));
+
+        var counterparty = cpRepo.findById(req.counterpartyId())
+                .orElseThrow(() -> new TradeNotFoundException(
+                        "counterparty " + req.counterpartyId()
+                ));
+
+        Trade trade = new Trade();
+        trade.setTradeRef(req.tradeRef());
+        trade.setInstrument(instrument);
+        trade.setCounterparty(counterparty);
+        trade.setAssetClass(req.assetClass());
+        trade.setSide(req.side());
+        trade.setQuantity(req.quantity());
+        trade.setPrice(req.price());
+        trade.setTradeDate(req.tradeDate());
+        trade.setStatus("PENDING");
+
+        return tradeRepo.save(trade);
+
         //     - metrics.incrementTradeCreated() + metrics.recordTradeValue(qty*price) — TICKET-ADV083
         //     - events.publish(new TradeEvent(... TRADE_CREATED ... actor ...)) — TICKET-ADV129
-        throw new UnsupportedOperationException("TICKET-ADV064");
     }
 
     public Trade update(Long id, TradeRequest req, String actor) {
@@ -108,12 +132,20 @@ public class TradeService {
                 TradeEvent.EventType.TRADE_CANCELLED, Instant.now(), actor, null, null));
     }
 
+    /**
+     * TICKET-ADV056 — composition site for the Specification factories. Each
+     * null filter contributes a no-op predicate, so one code path serves every
+     * combination of query parameters the list endpoint accepts.
+     */
     @Transactional(readOnly = true)
     public Page<Trade> list(LocalDate from, LocalDate to, String status, Long counterpartyId, Pageable pageable) {
-        // TODO(TICKET-ADV055 + TICKET-ADV056): combine the static helpers from
-        //   TradeSpecifications (hasStatus, tradeDateBetween, hasCounterparty)
-        //   via Specification.where(...).and(...) and call
-        //   tradeRepo.findAll(spec, pageable). Until JPA is in place, throw.
-        throw new UnsupportedOperationException("TICKET-ADV055");
+        // Specification.where(...) is deprecated for removal in Spring Data JPA 3.5;
+        // allOf(...) is the supported way to AND a set of specifications together.
+        Specification<Trade> spec = Specification.allOf(
+                tradeDateBetween(from, to),
+                hasStatus(status),
+                forCounterparty(counterpartyId));
+
+        return tradeRepo.findAll(spec, pageable);
     }
 }

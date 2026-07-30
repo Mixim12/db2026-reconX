@@ -1,6 +1,9 @@
 package com.dbtraining.reconx.exception;
 
-/** TICKET-ADV025 — 422 Unprocessable: internal vs external trade do not match. */
+/**
+ * TICKET-ADV025
+ * 422 Unprocessable: the internal and external trade records do not match.
+ */
 public class ReconciliationMismatchException extends ReconException {
     private final String reconBreakId;
 

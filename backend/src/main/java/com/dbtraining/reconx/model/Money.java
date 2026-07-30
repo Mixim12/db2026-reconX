@@ -31,15 +31,32 @@ public record Money(BigDecimal amount, Currency currency) {
         }
     }
 
+    /**
+     * @param amount       the decimal amount, parsed via {@link BigDecimal#BigDecimal(String)}
+     * @param currencyCode the ISO-4217 currency code, e.g. {@code "USD"}
+     * @return a new {@code Money} of {@code amount} in {@code currencyCode}
+     * @throws IllegalArgumentException if {@code currencyCode} is not a valid ISO-4217 code
+     */
     public static Money of(String amount, String currencyCode) {
         return new Money(new BigDecimal(amount), Currency.getInstance(currencyCode));
     }
 
+    /**
+     * @param amount       the decimal amount
+     * @param currencyCode the ISO-4217 currency code, e.g. {@code "USD"}
+     * @return a new {@code Money} of {@code amount} in {@code currencyCode}
+     * @throws IllegalArgumentException if {@code currencyCode} is not a valid ISO-4217 code
+     */
     public static Money of(BigDecimal amount, String currencyCode) {
         return new Money(amount, Currency.getInstance(currencyCode));
     }
 
-    /** Add another Money of the same currency. Throws on currency mismatch. */
+    /**
+     * Add another Money of the same currency.
+     * @param other the amount to add; must share this Money's currency
+     * @return a new {@code Money} whose amount is {@code this.amount + other.amount}
+     * @throws IllegalArgumentException if {@code other.currency()} differs from this currency
+     */
     public Money plus(Money other) {
         Objects.requireNonNull(other, "other");
         if (!currency.equals(other.currency())) {
@@ -50,7 +67,11 @@ public record Money(BigDecimal amount, Currency currency) {
         return new Money(amount.add(other.amount()), currency);
     }
 
-    /** Scale this Money by a multiplier. Returns a new instance; never mutates. */
+    /**
+     * Scale this Money by a multiplier. Returns a new instance; never mutates.
+     * @param multiplier the scalar to multiply this amount by
+     * @return a new {@code Money} whose amount is {@code this.amount * multiplier}, same currency
+     */
     public Money times(BigDecimal multiplier) {
         Objects.requireNonNull(multiplier, "multiplier");
         return new Money(amount.multiply(multiplier), currency);
