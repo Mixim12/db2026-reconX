@@ -33,6 +33,16 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="003-clob-on-instruments-h2" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="h2"/>
+                <not><columnExists tableName="instruments" columnName="metadata"/></not>
+            </and>
+        </preConditions>
+        <sql>ALTER TABLE instruments ADD COLUMN metadata JSON DEFAULT '{}' NOT NULL;</sql>
+    </changeSet>
+
     <changeSet id="tag-release-1-1" author="trainer">
         <tagDatabase tag="release-1.1"/>
     </changeSet>
