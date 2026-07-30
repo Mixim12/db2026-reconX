@@ -74,11 +74,13 @@
             </and>
         </preConditions>
         <sql splitStatements="false"><![CDATA[
-            INSERT INTO trades (trade_ref, instrument_id, counterparty_id, quantity, price, trade_date, status)
+            INSERT INTO trades (trade_ref, instrument_id, counterparty_id, asset_class, side, quantity, price, trade_date, status)
             SELECT
                 'TRD-2026-' || LPAD(n::TEXT, 6, '0')                     AS trade_ref,
                 1 + (n % 50)                                              AS instrument_id,
                 1 + (n % 10)                                              AS counterparty_id,
+                (ARRAY['EQUITY','FIXED_INCOME','FX','COMMODITY','DERIVATIVE'])[1 + (n % 5)] AS asset_class,
+                (ARRAY['BUY','SELL'])[1 + (n % 2)]                        AS side,
                 ROUND((random() * 10000 + 1)::NUMERIC, 4)                 AS quantity,
                 ROUND((random() * 500 + 1)::NUMERIC, 4)                   AS price,
                 DATE '2026-04-01' + (n % 120) * INTERVAL '1 day'          AS trade_date,

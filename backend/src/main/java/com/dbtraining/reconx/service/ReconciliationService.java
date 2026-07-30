@@ -6,6 +6,7 @@ import com.dbtraining.reconx.model.TradeType;
 import com.dbtraining.reconx.observability.ReconMetrics;
 import com.dbtraining.reconx.repository.ReconResultRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class ReconciliationService {
         this(engine, repository, new ReconMetrics(new SimpleMeterRegistry()));
     }
 
+    @Autowired
     public ReconciliationService(ReconciliationEngine engine, ReconResultRepository repository, ReconMetrics reconMetrics) {
         this.engine = engine;
         this.repository = repository;
