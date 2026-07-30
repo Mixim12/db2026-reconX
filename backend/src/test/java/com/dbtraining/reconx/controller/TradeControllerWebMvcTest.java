@@ -100,4 +100,14 @@ class TradeControllerWebMvcTest {
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void testCreateTrade_viewerRole_returns403() throws Exception {
+        mockMvc.perform(post("/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest()))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
 }
