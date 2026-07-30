@@ -17,6 +17,7 @@ import java.time.LocalDate;
  */
 public record TradeRequest(
         @NotBlank
+        @NotBlank
         @Pattern(regexp = "^[A-Z]{3}-\\d{8}-\\d{4}$",
                  message = "tradeRef must match AAA-YYYYMMDD-NNNN")
         String tradeRef,
@@ -45,5 +46,9 @@ public record TradeRequest(
         @NotNull
         @PastOrPresent(message = "tradeDate must not be in the future")
         LocalDate tradeDate
+<<<<<<< HEAD
+) {}
+=======
 )
 {}
+>>>>>>> origin/develop
