@@ -3,6 +3,8 @@ package com.dbtraining.reconx.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -74,7 +76,15 @@ public class SecurityConfig {
                 .build();
     }
 
-    // TODO(TICKET-ADV073): @Bean PasswordEncoder (BCrypt).
+    /**
+     * TICKET-ADV072 — needed to verify the BCrypt hashes seeded in 008-seed.xml.
+     * The filter chain and the RBAC matchers stay with TICKET-ADV073 / ADV074.
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
     // TODO(TICKET-ADV073): register JwtAuthenticationFilter before
     //                     UsernamePasswordAuthenticationFilter.
     // TODO(TICKET-ADV074): add @EnableMethodSecurity and the RBAC matchers.

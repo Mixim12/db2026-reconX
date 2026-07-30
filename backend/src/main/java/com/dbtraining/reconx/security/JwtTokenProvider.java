@@ -1,12 +1,16 @@
 package com.dbtraining.reconx.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * ============================================================================
@@ -63,15 +67,36 @@ public class JwtTokenProvider {
         this.issuer = issuer;
     }
 
+    /** Signs an HS256 token whose subject is the email and whose "role" claim carries the role. */
     public String generate(String email, String role) {
-        throw new UnsupportedOperationException("TICKET-ADV072");
+        Instant issuedAt = Instant.now();
+
+        return Jwts.builder()
+                .subject(email)
+                .issuer(issuer)
+                .issuedAt(Date.from(issuedAt))
+                .expiration(Date.from(issuedAt.plusSeconds(expirationSeconds())))
+                .claims(Map.of("role", role))
+                .signWith(key)
+                .compact();
     }
 
+    /**
+     * Verifies the signature, the issuer and the expiry, then hands back the claims.
+     * Throws {@link io.jsonwebtoken.JwtException} on anything it does not trust —
+     * callers must treat that as "unauthenticated", never as "no claims".
+     */
     public Claims parse(String token) {
-        throw new UnsupportedOperationException("TICKET-ADV072");
+        return Jwts.parser()
+                .verifyWith(key)
+                .requireIssuer(issuer)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
+    /** Lifetime of a freshly issued token, in seconds — the {@code expiresInSeconds} on the wire. */
     public long expirationSeconds() {
-        throw new UnsupportedOperationException("TICKET-ADV072");
+        return expirationMinutes * 60;
     }
 }

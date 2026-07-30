@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -34,6 +35,20 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT, exception.getMessage());
         problem.setType(URI.create("https://reconx.dbtraining.com/errors/duplicate-trade-ref"));
         problem.setTitle("Duplicate trade reference");
+        return problem;
+    }
+
+    /**
+     * TICKET-ADV072 — a failed login is 401, and the detail says only that the
+     * credentials were rejected: no hint about which half was wrong.
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail badCredentials(BadCredentialsException exception) {
+        log.warn("Rejected login attempt");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/invalid-credentials"));
+        problem.setTitle("Invalid credentials");
         return problem;
     }
 
