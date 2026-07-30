@@ -317,7 +317,14 @@ body {
 }
 
 button { padding: var(--space-1) var(--space-2); border: var(--border-width-sm) solid var(--color-border); background: var(--color-transparent); color: inherit; border-radius: var(--radius-md); cursor: pointer; }
-:focus-visible { outline: var(--border-width-md) solid var(--color-gold); outline-offset: var(--outline-offset); }
+
+/* TICKET-ADV109 — keyboard focus visibility */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible {
+  outline: var(--border-width-md) solid var(--color-gold);
+  outline-offset: var(--outline-offset);
+  border-radius: var(--radius-sm);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
