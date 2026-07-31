@@ -1,8 +1,10 @@
 // TICKET-ADV114 — Compound DataTable.
 // TICKET-ADV117 — useDebouncedSearch.
-import React, { useState, useEffect } from 'react';
+// TICKET-ADV119 / TICKET-ADV121 — TradeRow memoisation & useCallback handler
+import React, { useState, useEffect, useCallback } from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import DataTable from '@components/DataTable.jsx';
+import TradeRow from '@components/TradeRow.jsx';
 import { useDebouncedSearch } from '@hooks/useDebouncedSearch.js';
 import { api } from '@services/apiService.js';
 
@@ -11,6 +13,7 @@ function Trades() {
   const debounced = useDebouncedSearch(search, 300);
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [data, setData] = useState({ items: [], totalPages: 0 });
 
   useEffect(() => {
@@ -23,6 +26,11 @@ function Trades() {
       .catch(() => setData({ items: [], totalPages: 0 }));
   }, [page, debounced, sort]);
 
+  // TICKET-ADV121: Reference-stable handler for memoised <TradeRow /> child components
+  const handleSelectTrade = useCallback((id) => {
+    setSelectedId(id);
+  }, []);
+
   return (
     <section>
       <h2>Trades</h2>
@@ -32,6 +40,7 @@ function Trades() {
         value={search}
         onChange={(e) => setSearch(e.target.value.toUpperCase())}
       />
+      {selectedId && <p data-testid="selected-trade">Selected Trade: {selectedId}</p>}
       <DataTable sort={sort} onSortChange={setSort}>
         <DataTable.Header columns={[
           { key: 'tradeRef', label: 'Ref' },
@@ -43,13 +52,7 @@ function Trades() {
         <DataTable.Body
           rows={data.items}
           render={(t) => (
-            <>
-              <span>{t.tradeRef}</span>
-              <span>{t.symbol}</span>
-              <span>{t.qty}</span>
-              <span>{t.price}</span>
-              <span>{t.status}</span>
-            </>
+            <TradeRow key={t.id || t.tradeRef} trade={t} onClick={handleSelectTrade} />
           )}
         />
         <DataTable.Pagination
