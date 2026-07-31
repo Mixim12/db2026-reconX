@@ -44,9 +44,26 @@ public class TradeEventProducer {
         this.template = template;
     }
 
+    /**
+     * Fire-and-forget: a broker outage must never fail the HTTP request or
+     * roll back the DB transaction that already committed the trade change,
+     * so both the synchronous failure (e.g. TimeoutException from
+     * max.block.ms while send() waits on cluster metadata) and the async
+     * failure on the returned future are caught and logged, never rethrown.
+     */
     public void publish(TradeEvent event) {
         log.debug("Publishing TradeEvent eventId={} ref={} type={}",
                   event.eventId(), event.tradeRef(), event.eventType());
-        template.send(TOPIC, event.tradeRef(), event);
+        try {
+            template.send(TOPIC, event.tradeRef(), event)
+                    .exceptionally(ex -> {
+                        log.warn("Failed to publish TradeEvent eventId={} ref={} type={}",
+                                 event.eventId(), event.tradeRef(), event.eventType(), ex);
+                        return null;
+                    });
+        } catch (Exception ex) {
+            log.warn("Failed to publish TradeEvent eventId={} ref={} type={}",
+                      event.eventId(), event.tradeRef(), event.eventType(), ex);
+        }
     }
 }

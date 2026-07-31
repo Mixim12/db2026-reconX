@@ -35,6 +35,14 @@ public interface TradeRepository
 
     Optional<Trade> findByTradeRef(String tradeRef);
 
+    /**
+     * Fetch-joins instrument/counterparty so callers that map straight to
+     * TradeResponse after the transaction closes (open-in-view is disabled)
+     * don't hit a LazyInitializationException — see updateStatus().
+     */
+    @Query("SELECT t FROM Trade t JOIN FETCH t.instrument JOIN FETCH t.counterparty WHERE t.id = :id")
+    Optional<Trade> findByIdWithAssociations(@Param("id") Long id);
+
     @Query("""
         SELECT t FROM Trade t
         WHERE (:from IS NULL OR t.tradeDate >= :from)

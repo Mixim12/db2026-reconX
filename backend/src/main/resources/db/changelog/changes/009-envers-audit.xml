@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ============================================================================
+ TICKET-ADV052 — Hibernate Envers schema: revinfo + trades_aud
+ WHAT:    The global revision table (revinfo) plus the per-entity audit
+          table for Trade (trades_aud), matching Hibernate Envers' default
+          naming/column conventions for the @Audited entity.
+ WHY:     `spring.jpa.hibernate.ddl-auto: validate` means Hibernate never
+          creates these tables itself — Envers requires them to already
+          exist, or SessionFactory bootstrap fails with
+          "Schema-validation: missing table [revinfo]".
+ HOW:     revinfo(rev, revtstmp) is Envers' DefaultRevisionEntity. trades_aud
+          mirrors every @Audited column on Trade plus the rev/revtype
+          tracking columns. instrument_id/counterparty_id are marked
+          RelationTargetAuditMode.NOT_AUDITED (Envers won't follow their
+          own history), but the FK value at each revision is still stored
+          here as a plain column.
+ ============================================================================
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="009-create-revinfo-seq" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><sequenceExists sequenceName="revinfo_seq"/></not>
+        </preConditions>
+        <!-- Hibernate's DefaultRevisionEntity uses GenerationType.SEQUENCE and
+             derives the sequence name "revinfo_seq" from the table name — a
+             Postgres SERIAL column would create "revinfo_rev_seq" instead,
+             which Hibernate's validator would not find. incrementBy must be
+             50 to match the JPA-default allocationSize Envers' generator
+             expects, or Hibernate refuses to boot with a mismatch error. -->
+        <createSequence sequenceName="revinfo_seq" startValue="1" incrementBy="50"/>
+        <rollback>
+            <dropSequence sequenceName="revinfo_seq"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="009-create-revinfo" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="revinfo"/></not>
+        </preConditions>
+        <createTable tableName="revinfo">
+            <column name="rev" type="INT" defaultValueSequenceNext="revinfo_seq">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="revtstmp" type="BIGINT"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="revinfo"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="009-create-trades-aud" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="trades_aud"/></not>
+        </preConditions>
+        <createTable tableName="trades_aud">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="rev" type="INT">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="revtype" type="SMALLINT"/>
+            <column name="trade_ref" type="VARCHAR(30)"/>
+            <column name="instrument_id" type="BIGINT"/>
+            <column name="counterparty_id" type="BIGINT"/>
+            <column name="asset_class" type="VARCHAR(20)"/>
+            <column name="side" type="VARCHAR(4)"/>
+            <column name="quantity" type="NUMERIC(18,4)"/>
+            <column name="price" type="NUMERIC(18,4)"/>
+            <column name="trade_date" type="DATE"/>
+            <column name="status" type="VARCHAR(20)"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="modified_at" type="TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="trades_aud" baseColumnNames="rev"
+                                 constraintName="fk_trades_aud_revinfo"
+                                 referencedTableName="revinfo" referencedColumnNames="rev"/>
+        <rollback>
+            <dropTable tableName="trades_aud"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
