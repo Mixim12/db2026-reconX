@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.repository;
 
 import com.dbtraining.reconx.repository.entity.Trade;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -59,5 +60,23 @@ public final class TradeSpecifications {
         return (root, query, cb) -> pattern == null || pattern.isBlank()
                 ? cb.conjunction()
                 : cb.like(root.get("tradeRef"), pattern + "%");
+    }
+
+    /**
+     * Fetch-joins instrument/counterparty so TradeMapper can read
+     * instrument.symbol / counterparty.name after the transaction closes
+     * (open-in-view is disabled) without hitting a LazyInitializationException.
+     * Skipped on the COUNT query Spring Data runs for pagination — fetch
+     * joins aren't valid there.
+     */
+    public static Specification<Trade> withAssociations() {
+        return (root, query, cb) -> {
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("instrument", JoinType.LEFT);
+                root.fetch("counterparty", JoinType.LEFT);
+                query.distinct(true);
+            }
+            return cb.conjunction();
+        };
     }
 }

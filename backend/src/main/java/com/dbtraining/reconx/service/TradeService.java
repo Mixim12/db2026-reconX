@@ -125,7 +125,7 @@ public class TradeService {
     }
 
     public Trade updateStatus(Long id, String status, String actor) {
-        Trade trade = tradeRepo.findById(id)
+        Trade trade = tradeRepo.findByIdWithAssociations(id)
                 .orElseThrow(() ->
                         new TradeNotFoundException(String.valueOf(id))
                 );
@@ -170,7 +170,8 @@ public class TradeService {
         Specification<Trade> spec = Specification.allOf(
                 tradeDateBetween(from, to),
                 hasStatus(status),
-                forCounterparty(counterpartyId));
+                forCounterparty(counterpartyId),
+                withAssociations());
 
         return tradeRepo.findAll(spec, pageable);
     }
