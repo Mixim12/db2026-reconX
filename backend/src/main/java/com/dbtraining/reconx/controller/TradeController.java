@@ -55,7 +55,7 @@ public class TradeController {
             @RequestParam(required = false) Long counterpartyId,
             @PageableDefault(size = 20, sort = "tradeDate", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<Trade> page = service.list(from, to, status, counterpartyId, pageable);
-        return PagedResponse.of(page, mapper::toResponse);
+        return PagedResponse.from(page, mapper::toResponse);
     }
 
     @PostMapping

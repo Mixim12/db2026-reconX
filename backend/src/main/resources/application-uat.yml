@@ -11,6 +11,8 @@ spring:
       maximum-pool-size: 20
       connection-timeout: 5000
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
       hibernate.jdbc.batch_size: 50
