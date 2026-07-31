@@ -7,8 +7,8 @@ import { useTradeStream } from '@hooks/useTradeStream.js';
 function StatCard({ label, value }) {
   return (
     <article className="stat-card">
-      <h3>{label}</h3>
-      <p>{value}</p>
+      <h3 className="stat-card__label">{label}</h3>
+      <p className="stat-card__value">{value}</p>
     </article>
   );
 }
