@@ -5,6 +5,13 @@
 
   const MAX_CARDS = 50;
 
+  function updateConnectionBadge(text, variant) {
+    const badge = document.getElementById('sse-status');
+    if (!badge) return;
+    badge.textContent = text;
+    badge.className = 'badge badge--' + variant;
+  }
+
   function escapeHtml(str) {
     if (str == null) return '';
     return String(str)
@@ -72,6 +79,7 @@
 
       sse.onopen = function () {
         console.log('[SSE] Connected to trade stream');
+        updateConnectionBadge('Live', 'live');
       };
 
       sse.onmessage = function (event) {
@@ -85,6 +93,7 @@
 
       sse.onerror = function () {
         console.warn('[SSE] Connection lost. Reconnecting...');
+        updateConnectionBadge('Reconnecting…', 'reconnecting');
         // EventSource automatically handles reconnection with backoff
       };
     } catch (e) {

@@ -263,6 +263,20 @@ body {
   animation: pulse 2s ease-in-out infinite;
 }
 
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  vertical-align: middle;
+}
+
+.badge--live { background: var(--color-success); color: var(--color-white); }
+.badge--reconnecting { background: var(--color-warning); color: var(--color-text); }
+
 .page {
   display: block;
   padding: var(--space-4);
