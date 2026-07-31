@@ -10,6 +10,7 @@ import com.dbtraining.reconx.repository.InstrumentRepository;
 import com.dbtraining.reconx.repository.TradeRepository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.dto.TradeEvent;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -120,7 +121,8 @@ public class TradeService {
 
         Trade saved = tradeRepo.save(trade);
         events.publish(new TradeEvent(UUID.randomUUID(), saved.getTradeRef(),
-                TradeEvent.EventType.TRADE_UPDATED, Instant.now(), actor, null, saved.getStatus()));
+                TradeEvent.EventType.TRADE_UPDATED, Instant.now(), actor, null,
+                TextNode.valueOf(saved.getStatus())));
         return saved;
     }
 
@@ -142,8 +144,8 @@ public class TradeService {
                 TradeEvent.EventType.TRADE_UPDATED,
                 Instant.now(),
                 actor,
-                previousStatus,
-                saved.getStatus()
+                TextNode.valueOf(previousStatus),
+                TextNode.valueOf(saved.getStatus())
         ));
 
         return saved;
