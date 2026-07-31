@@ -31,12 +31,12 @@
     const price = trade.price != null ? trade.price : '0.00';
 
     card.innerHTML = `
-      <strong>${tradeRef}</strong>
-      <span>${symbol}</span>
-      <span>qty=${qty}</span>
-      <span>price=${price}</span>
-      <span><time>${timestamp}</time></span>
-      <span>[${status}]</span>
+      <strong class="trade-card__ref">${tradeRef}</strong>
+      <span class="trade-card__field">${symbol}</span>
+      <span class="trade-card__field">qty=${qty}</span>
+      <span class="trade-card__field">price=${price}</span>
+      <span class="trade-card__field"><time>${timestamp}</time></span>
+      <span class="trade-card__field">[${status}]</span>
     `;
 
     // Entrance animation lifecycle cleanup
