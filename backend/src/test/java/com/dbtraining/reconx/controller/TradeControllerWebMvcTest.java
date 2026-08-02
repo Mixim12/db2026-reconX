@@ -4,6 +4,7 @@ import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
 import com.dbtraining.reconx.repository.entity.Trade;
+import com.dbtraining.reconx.security.JwtTokenProvider;
 import com.dbtraining.reconx.service.TradeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,12 @@ class TradeControllerWebMvcTest {
 
     @MockBean
     private TradeMapper tradeMapper;
+
+    // The slice picks up SecurityConfig (needed for the 401/403 assertions below),
+    // which wires JwtAuthenticationFilter -> JwtTokenProvider. The provider is a
+    // @Service and therefore outside the @WebMvcTest slice.
+    @MockBean
+    private JwtTokenProvider jwtTokenProvider;
 
     private TradeRequest validRequest() {
         return new TradeRequest(
