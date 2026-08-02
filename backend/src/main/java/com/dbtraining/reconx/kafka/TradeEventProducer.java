@@ -44,9 +44,27 @@ public class TradeEventProducer {
         this.template = template;
     }
 
+    /**
+     * Publishing is best-effort by design: the trade is already persisted, and a
+     * broker outage must not roll back the caller's transaction (see the GOTCHA
+     * above). KafkaTemplate.send throws synchronously when it cannot fetch topic
+     * metadata, and reports later failures through the returned future — both
+     * paths are logged and swallowed here rather than surfaced as a 500.
+     */
     public void publish(TradeEvent event) {
         log.debug("Publishing TradeEvent eventId={} ref={} type={}",
                   event.eventId(), event.tradeRef(), event.eventType());
-        template.send(TOPIC, event.tradeRef(), event);
+        try {
+            template.send(TOPIC, event.tradeRef(), event)
+                    .whenComplete((result, failure) -> {
+                        if (failure != null) {
+                            log.error("Failed to publish TradeEvent eventId={} ref={} type={}",
+                                      event.eventId(), event.tradeRef(), event.eventType(), failure);
+                        }
+                    });
+        } catch (Exception ex) {
+            log.error("Failed to publish TradeEvent eventId={} ref={} type={}",
+                      event.eventId(), event.tradeRef(), event.eventType(), ex);
+        }
     }
 }
