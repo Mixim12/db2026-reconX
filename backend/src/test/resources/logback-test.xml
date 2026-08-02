@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  logback-spring.xml declares its appenders inside <springProfile> blocks for
+  dev/uat/prod only, so tests running under the "test" profile end up with no
+  appender at all and server-side stack traces are silently discarded.
+  This test-scope config gives them somewhere to go.
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.dbtraining.reconx" level="DEBUG"/>
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
