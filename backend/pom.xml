@@ -179,6 +179,13 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Custom Starter (ADV095) -->
+        <dependency>
+            <groupId>com.dbtraining.reconx</groupId>
+            <artifactId>recon-audit-starter</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Swagger / OpenAPI (ADV058) -->
         <dependency>
             <groupId>org.springdoc</groupId>
