@@ -2,6 +2,7 @@ package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.service.ReconciliationEngine;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.awaitility.Awaitility;
@@ -57,7 +58,7 @@ class DlqRoutingIT {
     ReconciliationEngine reconEngine;
 
     @Test
-    void failingConsumerRoutesToDlq() {
+    void failingConsumerRoutesToDlq() throws Exception {
         Mockito.doThrow(new RuntimeException("boom"))
                 .when(reconEngine).scheduleRecon(Mockito.anyString());
 
@@ -68,7 +69,7 @@ class DlqRoutingIT {
                 Instant.now(),
                 "system",
                 null,
-                "{\"price\":100}"
+                new ObjectMapper().readTree("{\"price\":100}")
         );
         producer.publish(event);
 
