@@ -92,6 +92,10 @@ body {
 
 .loader { padding: var(--space-4); color: var(--color-text); }
 
+.page-skeleton { display: grid; gap: var(--space-3); }
+.page-skeleton__title { width: 40%; height: var(--space-6); background: var(--color-surface); border-radius: var(--radius-md); }
+.page-skeleton__row { height: var(--space-8); background: var(--color-surface); border-radius: var(--radius-md); }
+
 /* TICKET-ADV101 / ADV110 — BEM stat cards + trade cards */
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-3) 0; }
 .stat-card { background: var(--color-surface); border: var(--border-width-sm) solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); box-shadow: var(--shadow-sm); }
