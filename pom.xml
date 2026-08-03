@@ -11,10 +11,15 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>backend/common</module>
-        <module>backend/domain</module>
-        <module>backend/repository</module>
-        <module>backend/service</module>
-        <module>backend/api</module>
+        <!-- ordered by dependency: backend depends on recon-audit-starter:1.0.0 -->
+        <module>recon-audit-starter</module>
+        <module>backend</module>
+        <!--
+          backend/{common,domain,repository,service,api} are empty scaffolding for a
+          future modularisation ticket. They declare reconx-parent (backend/pom.xml)
+          as their parent, but that POM is jar-packaged, so listing them here makes
+          the whole reactor unreadable. Re-add once they hold sources and
+          reconx-parent is split into a pom-packaged aggregator.
+        -->
     </modules>
 </project>

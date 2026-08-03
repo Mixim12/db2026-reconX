@@ -3,6 +3,7 @@ package com.dbtraining.reconx.kafka;
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.entity.AuditLogEntry;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -49,6 +50,19 @@ public class AuditEventConsumer {
                 e.actor(),
                 e.before() != null ? e.before().toString() : null,
                 e.after() != null ? e.after().toString() : null));
+                asJsonText(e.before()),
+                asJsonText(e.after())));
         log.debug("Audit row persisted for eventId={} ref={}", e.eventId(), e.tradeRef());
+    }
+
+    /**
+     * TradeEvent carries structured snapshots (JsonNode, TICKET-ADV130) but
+     * audit_log.before_state / after_state are TEXT columns that ADV137's
+     * replay reads back as raw JSON. Serialise at the persistence boundary so
+     * the wire format stays structured and the table stays portable.
+     * A null snapshot (creates have no before, cancels have no after) stays null.
+     */
+    private static String asJsonText(JsonNode snapshot) {
+        return snapshot == null || snapshot.isNull() ? null : snapshot.toString();
     }
 }
