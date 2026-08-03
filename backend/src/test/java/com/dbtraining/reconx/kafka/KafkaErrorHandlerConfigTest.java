@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 import org.springframework.kafka.support.serializer.DeserializationException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,8 +29,6 @@ class KafkaErrorHandlerConfigTest {
 
     @Test
     void errorHandlerIsBackedByADeadLetterPublishingRecoverer() {
-        // errorHandler(...) only accepts a DeadLetterPublishingRecoverer, so the
-        // "built from a recoverer" criterion is enforced by the signature itself.
         DeadLetterPublishingRecoverer recoverer = config.deadLetterRecoverer(template);
 
         assertThat(recoverer).isNotNull();
@@ -65,7 +63,6 @@ class KafkaErrorHandlerConfigTest {
     void transientListenerFailuresStillGetTheirRetries() {
         DefaultErrorHandler handler = config.errorHandler(config.deadLetterRecoverer(template));
 
-        // Not on the not-retryable list: a DB blip must burn the retry budget before DLQ.
         assertThat(handler.removeClassification(IllegalStateException.class)).isNull();
     }
 

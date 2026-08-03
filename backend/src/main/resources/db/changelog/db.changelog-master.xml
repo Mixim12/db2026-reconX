@@ -27,5 +27,6 @@
     <include file="changes/008-seed.xml"          relativeToChangelogFile="true"/>
     <include file="changes/009-envers-audit.xml"  relativeToChangelogFile="true"/>
     <include file="changes/011-mv-daily-recon-summary.xml" relativeToChangelogFile="true"/>
+    <include file="changes/012-dlq-messages.xml"          relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
