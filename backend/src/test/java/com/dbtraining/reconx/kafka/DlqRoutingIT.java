@@ -2,10 +2,14 @@ package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.service.ReconciliationEngine;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,7 +61,7 @@ class DlqRoutingIT {
     ReconciliationEngine reconEngine;
 
     @Test
-    void failingConsumerRoutesToDlq() {
+    void failingConsumerRoutesToDlq() throws Exception {
         Mockito.doThrow(new RuntimeException("boom"))
                 .when(reconEngine).scheduleRecon(Mockito.anyString());
 
@@ -68,7 +72,7 @@ class DlqRoutingIT {
                 Instant.now(),
                 "system",
                 null,
-                "{\"price\":100}"
+                new ObjectMapper().readTree("{\"price\":100}")
         );
         producer.publish(event);
 
@@ -96,5 +100,14 @@ class DlqRoutingIT {
             }
         }
         return false;
+    }
+
+    private static JsonNode parse(String json) {
+        if (json == null) return null;
+        try {
+            return new ObjectMapper().readTree(json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
