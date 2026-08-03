@@ -73,7 +73,7 @@ class KafkaErrorHandlerConfigTest {
         DefaultErrorHandler handler = config.errorHandler(config.deadLetterRecoverer(template));
         ConcurrentKafkaListenerContainerFactory<String, TradeEvent> factory =
                 new KafkaConsumerFactoryConfig()
-                        .tradeEventListenerContainerFactory(new KafkaProperties(), handler);
+                        .tradeEventListenerContainerFactory(new KafkaProperties(), handler, mock(io.micrometer.core.instrument.MeterRegistry.class));
 
         ConcurrentMessageListenerContainer<String, TradeEvent> container =
                 factory.createContainer("trade-events");
