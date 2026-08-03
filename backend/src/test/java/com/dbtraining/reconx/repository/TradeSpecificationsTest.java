@@ -1,5 +1,6 @@
 package com.dbtraining.reconx.repository;
 
+import com.dbtraining.reconx.config.JpaConfig;
 import com.dbtraining.reconx.repository.entity.Counterparty;
 import com.dbtraining.reconx.repository.entity.Instrument;
 import com.dbtraining.reconx.repository.entity.Trade;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,6 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.liquibase.enabled=false",
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
+// @DataJpaTest filters out application @Configuration classes, so the auditing
+// listener behind Trade.createdAt / Trade.modifiedAt has to be imported explicitly.
+@Import(JpaConfig.class)
 class TradeSpecificationsTest {
 
     @Autowired

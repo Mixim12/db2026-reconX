@@ -28,6 +28,8 @@
         <jjwt.version>0.12.6</jjwt.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <hypersistence.version>3.9.0</hypersistence.version>
+        <!-- 0.8.12 ships ASM 9.7, which rejects Java 25 class files (major version 69). -->
+        <jacoco.version>0.8.15</jacoco.version>
     </properties>
 
     <!-- modules are removed temporarily to allow jar build -->
@@ -269,7 +271,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
                         <goals>
