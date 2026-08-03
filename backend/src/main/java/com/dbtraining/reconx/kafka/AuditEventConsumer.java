@@ -48,6 +48,8 @@ public class AuditEventConsumer {
                 e.eventType().name(),
                 e.timestamp(),
                 e.actor(),
+                e.before() != null ? e.before().toString() : null,
+                e.after() != null ? e.after().toString() : null));
                 asJsonText(e.before()),
                 asJsonText(e.after())));
         log.debug("Audit row persisted for eventId={} ref={}", e.eventId(), e.tradeRef());
