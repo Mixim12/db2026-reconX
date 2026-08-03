@@ -2,8 +2,6 @@ package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.service.ReconciliationEngine;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.awaitility.Awaitility;
@@ -63,8 +61,6 @@ class DlqRoutingIT {
         Mockito.doThrow(new RuntimeException("boom"))
                 .when(reconEngine).scheduleRecon(Mockito.anyString());
 
-        JsonNode after = JsonNodeFactory.instance.objectNode().put("price", 100);
-
         TradeEvent event = new TradeEvent(
                 UUID.randomUUID(),
                 "TRD-DLQ-1",
@@ -72,7 +68,7 @@ class DlqRoutingIT {
                 Instant.now(),
                 "system",
                 null,
-                after
+                "{\"price\":100}"
         );
         producer.publish(event);
 
