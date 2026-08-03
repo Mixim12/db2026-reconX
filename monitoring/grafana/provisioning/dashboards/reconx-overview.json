@@ -73,6 +73,62 @@
         }
       ],
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 }
+    },
+    {
+      "type": "row",
+      "title": "Kafka health",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "id": 100
+    },
+    {
+      "type": "timeseries",
+      "title": "Consumer lag by topic",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (topic) (kafka_consumer_records_lag)",
+          "legendFormat": "{{topic}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 17 },
+      "id": 101
+    },
+    {
+      "title": "Throughput: produced vs consumed",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        { "expr": "sum(rate(kafka_consumer_records_consumed_total[1m]))", "legendFormat": "consumed" },
+        { "expr": "sum(rate(kafka_producer_record_send_total[1m]))", "legendFormat": "produced" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 17 },
+      "id": 102
+    },
+    {
+      "title": "DLQ message count",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(kafka_consumer_records_consumed_total{topic=\"trade-events-dlq\"})"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 17 },
+      "id": 103
     }
   ],
   "refresh": "10s",
