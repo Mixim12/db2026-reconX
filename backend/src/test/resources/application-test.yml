@@ -10,3 +10,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+  # No broker runs in the container tests. Without a short block timeout every
+  # publish waits the 60s metadata default before giving up.
+  kafka:
+    producer:
+      properties:
+        max.block.ms: 2000
+    listener:
+      missing-topics-fatal: false

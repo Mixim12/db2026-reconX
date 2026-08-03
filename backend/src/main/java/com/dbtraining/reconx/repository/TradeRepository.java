@@ -3,6 +3,8 @@ package com.dbtraining.reconx.repository;
 import com.dbtraining.reconx.repository.entity.Trade;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -33,6 +35,23 @@ import java.util.Optional;
 public interface TradeRepository
         extends JpaRepository<Trade, Long>, JpaSpecificationExecutor<Trade> {
 
+    /**
+     * The read paths hand entities back to the controller layer, which maps them
+     * to DTOs after the service transaction has closed. With
+     * spring.jpa.open-in-view=false (ADV049) and both @ManyToOne associations
+     * LAZY (ADV050), touching trade.instrument or trade.counterparty during that
+     * mapping raises LazyInitializationException — so the associations are
+     * fetched up front here. It also collapses the list endpoint's N+1.
+     */
+    @Override
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    Optional<Trade> findById(Long id);
+
+    @Override
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
+    Page<Trade> findAll(Specification<Trade> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
     Optional<Trade> findByTradeRef(String tradeRef);
 
     /**
@@ -43,6 +62,7 @@ public interface TradeRepository
     @Query("SELECT t FROM Trade t JOIN FETCH t.instrument JOIN FETCH t.counterparty WHERE t.id = :id")
     Optional<Trade> findByIdWithAssociations(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"instrument", "counterparty"})
     @Query("""
         SELECT t FROM Trade t
         WHERE (:from IS NULL OR t.tradeDate >= :from)
