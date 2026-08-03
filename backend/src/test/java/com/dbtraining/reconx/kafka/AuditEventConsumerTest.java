@@ -3,6 +3,9 @@ package com.dbtraining.reconx.kafka;
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.repository.AuditLogRepository;
 import com.dbtraining.reconx.repository.entity.AuditLogEntry;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -24,6 +27,8 @@ import static org.mockito.Mockito.verify;
  * under its own consumer group so recon and audit both see every event.
  */
 class AuditEventConsumerTest {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final AuditLogRepository repository = mock(AuditLogRepository.class);
     private final AuditEventConsumer consumer = new AuditEventConsumer(repository);
@@ -55,7 +60,7 @@ class AuditEventConsumerTest {
         Instant occurredAt = Instant.parse("2026-06-03T10:15:30Z");
         TradeEvent event = new TradeEvent(eventId, "EQU-20260603-0001",
                 TradeEvent.EventType.TRADE_UPDATED, occurredAt, "trader-a",
-                "{\"notional\":1000}", "{\"notional\":2000}");
+                json("{\"notional\":1000}"), json("{\"notional\":2000}"));
 
         consumer.onTradeEvent(event);
 
@@ -110,7 +115,17 @@ class AuditEventConsumerTest {
                                     TradeEvent.EventType type, String before, String after) {
         return new TradeEvent(UUID.randomUUID(), tradeRef, type,
                 Instant.parse("2026-06-03T10:15:30Z").plusSeconds(secondsOffset),
-                "trader-a", before, after);
+                "trader-a", json(before), json(after));
+    }
+
+    /** TradeEvent carries JsonNode snapshots since TICKET-ADV130. */
+    private static JsonNode json(String raw) {
+        if (raw == null) return null;
+        try {
+            return MAPPER.readTree(raw);
+        } catch (JsonProcessingException e) {
+            throw new AssertionError("test fixture is not valid JSON: " + raw, e);
+        }
     }
 
     private static Method listenerMethod() {
