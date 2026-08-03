@@ -7,6 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
@@ -55,7 +59,7 @@ class AuditEventConsumerTest {
         Instant occurredAt = Instant.parse("2026-06-03T10:15:30Z");
         TradeEvent event = new TradeEvent(eventId, "EQU-20260603-0001",
                 TradeEvent.EventType.TRADE_UPDATED, occurredAt, "trader-a",
-                "{\"notional\":1000}", "{\"notional\":2000}");
+                parse("{\"notional\":1000}"), parse("{\"notional\":2000}"));
 
         consumer.onTradeEvent(event);
 
@@ -110,7 +114,16 @@ class AuditEventConsumerTest {
                                     TradeEvent.EventType type, String before, String after) {
         return new TradeEvent(UUID.randomUUID(), tradeRef, type,
                 Instant.parse("2026-06-03T10:15:30Z").plusSeconds(secondsOffset),
-                "trader-a", before, after);
+                "trader-a", parse(before), parse(after));
+    }
+
+    private static JsonNode parse(String json) {
+        if (json == null) return null;
+        try {
+            return new ObjectMapper().readTree(json);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static Method listenerMethod() {
