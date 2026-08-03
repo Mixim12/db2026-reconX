@@ -34,8 +34,8 @@ describe('<Dashboard />', () => {
     renderWithProviders(<Dashboard trades={trades} />);
 
     expect(screen.getByRole('heading', { name: /portfolio value/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /matched trades/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /unmatched trades/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^matched trades$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^unmatched trades$/i })).toBeInTheDocument();
     // 100 * 250 + 50 * 251 = 37550
     expect(screen.getByText(/37,550/)).toBeInTheDocument();
   });
