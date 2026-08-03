@@ -1,6 +1,7 @@
 package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
@@ -73,7 +74,8 @@ class KafkaErrorHandlerConfigTest {
         DefaultErrorHandler handler = config.errorHandler(config.deadLetterRecoverer(template));
         ConcurrentKafkaListenerContainerFactory<String, TradeEvent> factory =
                 new KafkaConsumerFactoryConfig()
-                        .tradeEventListenerContainerFactory(new KafkaProperties(), handler, mock(io.micrometer.core.instrument.MeterRegistry.class));
+                        .tradeEventListenerContainerFactory(
+                                new KafkaProperties(), handler, new SimpleMeterRegistry());
 
         ConcurrentMessageListenerContainer<String, TradeEvent> container =
                 factory.createContainer("trade-events");

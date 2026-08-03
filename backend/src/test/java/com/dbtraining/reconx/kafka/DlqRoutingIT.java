@@ -2,6 +2,7 @@ package com.dbtraining.reconx.kafka;
 
 import com.dbtraining.reconx.dto.TradeEvent;
 import com.dbtraining.reconx.service.ReconciliationEngine;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -71,7 +72,7 @@ class DlqRoutingIT {
                 Instant.now(),
                 "system",
                 null,
-                parse("{\"price\":100}")
+                JsonNodeFactory.instance.objectNode().put("price", 100)
         );
         producer.publish(event);
 
