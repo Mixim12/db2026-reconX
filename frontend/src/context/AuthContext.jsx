@@ -2,7 +2,7 @@
 // (refresh path lives in HttpOnly cookie — out of scope for this trainer copy).
 import React, { createContext, useContext, useState } from 'react';
 
-const AuthContext = createContext({ user: null, login: () => {}, logout: () => {} });
+export const AuthContext = createContext({ user: null, login: () => {}, logout: () => {} });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {

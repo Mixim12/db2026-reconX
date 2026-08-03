@@ -15,10 +15,13 @@
     },
     {
       "type": "timeseries",
-      "title": "API P95 latency (ADV088)",
+      "title": "API response time P50/P95/P99 (ADV088)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "targets": [
-        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "{{uri}}" }
+        { "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P50 {{uri}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P95 {{uri}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P99 {{uri}}" }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
     },
@@ -26,6 +29,21 @@
       "type": "stat",
       "title": "Open recon breaks (ADV091)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "value" },
       "targets": [{ "expr": "recon_break_count" }],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
     },
