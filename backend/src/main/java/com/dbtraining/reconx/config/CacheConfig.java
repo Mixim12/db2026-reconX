@@ -37,6 +37,10 @@ public class CacheConfig {
 
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(List.of(instrumentsCache, counterpartiesCache));
+        // SimpleCacheManager only publishes its caches once initializeCaches() has
+        // run. Spring would call it via InitializingBean, but doing it here means
+        // the returned manager is usable the moment it is built.
+        cacheManager.initializeCaches();
         return cacheManager;
     }
 }
