@@ -40,8 +40,7 @@ jobs:
           cache: maven
 
       - name: Build backend
-        working-directory: backend
-        run: ./mvnw -B package -DskipTests
+        run: ./mvnw -B -pl backend -am package -DskipTests
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -71,8 +70,7 @@ jobs:
           cache: maven
 
       - name: Test backend
-        working-directory: backend
-        run: ./mvnw -B test
+        run: ./mvnw -B -pl backend -am test
 
       - name: Set up Node
         uses: actions/setup-node@v4
