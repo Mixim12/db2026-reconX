@@ -1,4 +1,8 @@
 # TICKET-ADV149 — Prometheus scrape config
+#
+# Prometheus runs inside the compose network, so every target is addressed by
+# its compose service name. "localhost" here means the prometheus container
+# itself — which is why only the self-scrape job may use it.
 global:
   scrape_interval: 10s
   evaluation_interval: 10s
@@ -8,11 +12,29 @@ rule_files:
 
 scrape_configs:
 
+  # Spring Boot actuator — context-path is /api, so the Micrometer endpoint
+  # sits at /api/actuator/prometheus (ADV083-ADV086 / ADV097).
   - job_name: 'reconx-backend'
     metrics_path: '/api/actuator/prometheus'
     static_configs:
-      - targets: ['backend:8080', 'host.docker.internal:8080']
+      - targets: ['backend:8080']
+        labels:
+          app: reconx
+          service: backend
 
+  # Kafka broker JMX port (KAFKA_JMX_PORT on the kafka service).
+  - job_name: 'kafka-jmx'
+    static_configs:
+      - targets: ['kafka:9101']
+        labels:
+          app: reconx
+          service: kafka
+
+  # Self-scrape: localhost is correct here — it resolves inside the prometheus
+  # container.
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          app: reconx
+          service: prometheus
