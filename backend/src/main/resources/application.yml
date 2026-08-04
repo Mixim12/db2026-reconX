@@ -45,6 +45,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+        enable.idempotence: true
     consumer:
       group-id: reconx-service
       auto-offset-reset: earliest
@@ -54,6 +55,7 @@ spring:
         spring.json.trusted.packages: com.dbtraining.reconx.dto
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.dbtraining.reconx.dto.TradeEvent
+        max.poll.records: 100
 
 server:
   servlet:
