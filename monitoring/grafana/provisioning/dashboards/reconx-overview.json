@@ -52,14 +52,15 @@
       "type": "timeseries",
       "title": "Trades created / sec (ADV089)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "trades/s" }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))", "legendFormat": "Trades created /s" }],
       "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
     },
     {
-      "type": "timeseries",
+      "type": "heatmap",
       "title": "Reconciliation duration histogram (ADV090)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(reconciliation_duration_seconds_bucket[5m])) by (le)" }],
+      "targets": [{ "expr": "sum(rate(reconciliation_duration_seconds_bucket[5m])) by (le)", "format": "heatmap" }],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
     },
     {
