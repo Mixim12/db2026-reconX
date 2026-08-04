@@ -9,7 +9,10 @@ describe('<DataTable>', () => {
     render(
       <DataTable>
         <DataTable.Header columns={[{ key: 'a', label: 'Alpha' }, { key: 'b', label: 'Beta' }]} />
-        <DataTable.Body rows={[{ id: 1 }, { id: 2 }]} render={(r) => <span>row {r.id}</span>} />
+        <DataTable.Body
+          rows={[{ id: 1 }, { id: 2 }]}
+          render={(r) => <tr key={r.id}><td>row {r.id}</td></tr>}
+        />
       </DataTable>
     );
     // TODO(TICKET-ADV125): write assertion — column labels "Alpha" / "Beta"

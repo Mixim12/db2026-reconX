@@ -28,9 +28,41 @@ async function request(method, path, body) {
   return res.json();
 }
 
+/**
+ * Backend `TradeResponse` names the instrument `instrumentSymbol` and the size
+ * `quantity`; the trade table view model calls them `symbol` and `qty`.
+ * Normalising here keeps that mismatch at the network boundary instead of
+ * leaking two vocabularies into the components.
+ *
+ * @param {Record<string, unknown>} dto
+ * @returns {{ id, tradeRef, symbol, qty, price, status, side, tradeDate, counterpartyName, assetClass }}
+ */
+export function toTradeViewModel(dto) {
+  return {
+    id: dto.id,
+    tradeRef: dto.tradeRef,
+    symbol: dto.instrumentSymbol ?? null,
+    qty: dto.quantity != null ? Number(dto.quantity) : null,
+    price: dto.price != null ? Number(dto.price) : null,
+    status: dto.status,
+    side: dto.side,
+    tradeDate: dto.tradeDate,
+    counterpartyName: dto.counterpartyName,
+    assetClass: dto.assetClass,
+  };
+}
+
+async function listTrades(params = '') {
+  const page = await request('GET', `/v1/trades${params}`);
+  return {
+    ...page,
+    items: (page?.items ?? []).map(toTradeViewModel),
+  };
+}
+
 export const api = {
   login: (email, password)   => request('POST', '/auth/login', { email, password }),
-  listTrades: (params = '')  => request('GET', `/v1/trades${params}`),
+  listTrades,
   createTrade: (req)         => request('POST', '/v1/trades', req),
   updateStatus: (id, status) => request('PATCH', `/v1/trades/${id}/status`, { status }),
   deleteTrade: (id)          => request('DELETE', `/v1/trades/${id}`),
