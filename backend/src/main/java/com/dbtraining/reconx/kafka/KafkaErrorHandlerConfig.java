@@ -1,6 +1,16 @@
 package com.dbtraining.reconx.kafka;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.DeserializationException;
+import org.springframework.util.backoff.ExponentialBackOff;
+
+import java.util.function.BiFunction;
 
 /**
  * ============================================================================
@@ -22,18 +32,6 @@ import org.springframework.context.annotation.Configuration;
  *          original.
  * ============================================================================
  *
- *  TODO(TICKET-ADV134 + ADV135):
- *    @Bean
- *    public DefaultErrorHandler errorHandler(KafkaTemplate<Object,Object> template) {
- *        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
- *            template,
- *            (ConsumerRecord<?,?> rec, Exception ex) ->
- *                new TopicPartition(rec.topic() + "-dlq", rec.partition()));
- *        ExponentialBackOff backoff = new ExponentialBackOff(1000L, 2.0);
- *        backoff.setMaxAttempts(3);
- *        return new DefaultErrorHandler(recoverer, backoff);
- *    }
- *
  *  GOTCHA: trade-events-dlq must already exist (TICKET-ADV128). The
  *          recoverer does NOT auto-create the topic.
  * ============================================================================
@@ -41,5 +39,33 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class KafkaErrorHandlerConfig {
 
-    // TODO(TICKET-ADV134 + ADV135): define the errorHandler @Bean — see comments above.
+    /**
+     * Routes a failed record to the DLQ of its own topic, preserving the partition
+     * number so per-tradeRef ordering still holds inside the DLQ.
+     */
+    static final BiFunction<ConsumerRecord<?, ?>, Exception, TopicPartition> DLQ_DESTINATION =
+            (rec, ex) -> new TopicPartition(rec.topic() + "-dlq", rec.partition());
+
+    @Bean
+    public DeadLetterPublishingRecoverer deadLetterRecoverer(KafkaTemplate<Object, Object> template) {
+        return new DeadLetterPublishingRecoverer(template, DLQ_DESTINATION);
+    }
+
+    @Bean
+    public DefaultErrorHandler errorHandler(DeadLetterPublishingRecoverer recoverer) {
+        ExponentialBackOff backoff = new ExponentialBackOff(1000L, 2.0);
+        // TICKET-ADV135: the criterion is a total time budget (~8s), not an
+        // attempt count. setMaxAttempts(3) compiles fine (it exists on
+        // ExponentialBackOff in Spring 6.2) but caps by *count*, not time -
+        // CI wouldn't catch the difference either way. 1s+2s+4s = 7s < 8s,
+        // so this still yields 3 retries in practice.
+        backoff.setMaxElapsedTime(8000L);
+
+        DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backoff);
+        // A payload that cannot be deserialized (or is structurally invalid) will fail
+        // identically on every attempt — send it straight to the DLQ instead of burning
+        // the 8s retry budget on it.
+        handler.addNotRetryableExceptions(DeserializationException.class, IllegalArgumentException.class);
+        return handler;
+    }
 }

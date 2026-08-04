@@ -1,18 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
- ============================================================================
- TICKET-ADV048 — Multi-module Maven (TRAINER COPY: single-module for runnability)
- WHAT:    The Advanced track teaches multi-module Maven (api/service/repository/
-          domain/common). In the TRAINER COPY we ship a single runnable module
-          to keep the answer key easy to boot. The trainer guide day4 shows the
-          multi-module split.
- HOW:     Standard Spring Boot 3 parent + java.version=25.
- WHY:     Students need a project that runs in one `mvn spring-boot:run`. Once
-          they pass Day 4 they can split this into modules and re-import.
- OBSERVE: `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev` boots cleanly,
-          Liquibase migrations apply, /actuator/health returns UP.
- ============================================================================
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -26,19 +12,87 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.dbtraining</groupId>
-    <artifactId>reconx</artifactId>
+    <groupId>com.dbtraining.reconx</groupId>
+    <artifactId>reconx-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>reconx</name>
+    <packaging>jar</packaging>
+    <name>reconx-parent</name>
     <description>ReconX — Enterprise Trade Reconciliation Platform (Advanced Track)</description>
 
     <properties>
         <java.version>25</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <mapstruct.version>1.6.2</mapstruct.version>
+        <lombok.version>1.18.34</lombok.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <testcontainers.version>1.20.3</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
         <hypersistence.version>3.9.0</hypersistence.version>
+        <!-- 0.8.12 ships ASM 9.7, which rejects Java 25 class files (major version 69). -->
+        <jacoco.version>0.8.15</jacoco.version>
     </properties>
+
+    <!-- modules are removed temporarily to allow jar build -->
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>8.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.hypersistence</groupId>
+                <artifactId>hypersistence-utils-hibernate-63</artifactId>
+                <version>${hypersistence.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>2.6.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>kafka</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Web + Validation (ADV063-ADV071) -->
@@ -81,7 +135,6 @@
         <dependency>
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>${hypersistence.version}</version>
         </dependency>
 
         <!-- Security + JWT (ADV072-ADV074) -->
@@ -92,19 +145,14 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- Kafka (ADV128-ADV136) -->
@@ -133,25 +181,29 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Custom Starter (ADV095) -->
+        <dependency>
+            <groupId>com.dbtraining.reconx</groupId>
+            <artifactId>recon-audit-starter</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Swagger / OpenAPI (ADV058) -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.6.0</version>
         </dependency>
 
         <!-- MapStruct (ADV054) -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
-            <version>${mapstruct.version}</version>
         </dependency>
 
         <!-- Structured logging (ADV061) -->
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-            <version>8.0</version>
         </dependency>
 
         <!-- Test (ADV040-ADV045, ADV075-ADV079) -->
@@ -171,26 +223,33 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>kafka</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -209,11 +268,10 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <!-- ADV046 / ADV156 — JaCoCo coverage gate (>=85%) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -226,6 +284,31 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <includes>
+                                        <include>com.dbtraining.reconx.service.*</include>
+                                        <include>com.dbtraining.reconx.repository.*</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.85</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

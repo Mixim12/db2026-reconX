@@ -17,6 +17,9 @@
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <changeSet id="006-create-audit-log" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="audit_log"/></not>
+        </preConditions>
         <createTable tableName="audit_log">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
@@ -26,8 +29,8 @@
             <column name="event_type" type="VARCHAR(30)"><constraints nullable="false"/></column>
             <column name="event_timestamp" type="TIMESTAMP"><constraints nullable="false"/></column>
             <column name="actor" type="VARCHAR(100)"/>
-            <column name="before_state" type="CLOB"/>
-            <column name="after_state" type="CLOB"/>
+            <column name="before_state" type="VARCHAR(10000)"/>
+            <column name="after_state" type="VARCHAR(10000)"/>
         </createTable>
         <createIndex tableName="audit_log" indexName="idx_audit_log_trade_ref">
             <column name="trade_ref"/>
@@ -38,26 +41,66 @@
     </changeSet>
 
     <changeSet id="006-create-recon-breaks" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="recon_breaks"/></not>
+        </preConditions>
         <createTable tableName="recon_breaks">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>
             </column>
             <column name="trade_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="job_id" type="VARCHAR(40)"/>
             <column name="discrepancy_type" type="VARCHAR(30)"><constraints nullable="false"/></column>
             <column name="status" type="VARCHAR(20)" defaultValue="OPEN"><constraints nullable="false"/></column>
             <column name="detected_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
             <column name="resolved_at" type="TIMESTAMP"/>
             <column name="resolution_note" type="VARCHAR(500)"/>
         </createTable>
-        <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id"
-                                 constraintName="fk_recon_breaks_trade"
-                                 referencedTableName="trades" referencedColumnNames="id"/>
         <rollback>
             <dropTable tableName="recon_breaks"/>
         </rollback>
     </changeSet>
 
+    <!-- ADV007 made trades a RANGE-partitioned parent on Postgres, so a plain
+         single-column FK to trades(id) is no longer valid there (Postgres
+         requires unique constraints on partitioned tables to include the
+         partition key). Keep the real FK on H2 (trades stays unpartitioned
+         there); on Postgres fall back to a plain index for lookup speed and
+         push referential integrity to the app layer. -->
+    <changeSet id="006-recon-breaks-fk-h2" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="h2"/>
+                <not><foreignKeyConstraintExists foreignKeyTableName="recon_breaks" foreignKeyName="fk_recon_breaks_trade"/></not>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint baseTableName="recon_breaks" baseColumnNames="trade_id"
+                                 constraintName="fk_recon_breaks_trade"
+                                 referencedTableName="trades" referencedColumnNames="id"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="recon_breaks" constraintName="fk_recon_breaks_trade"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-recon-breaks-trade-index-postgres" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <not><indexExists indexName="idx_recon_breaks_trade_id"/></not>
+            </and>
+        </preConditions>
+        <createIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id">
+            <column name="trade_id"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="recon_breaks" indexName="idx_recon_breaks_trade_id"/>
+        </rollback>
+    </changeSet>
+
     <changeSet id="006-create-recon-jobs" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="recon_jobs"/></not>
+        </preConditions>
         <createTable tableName="recon_jobs">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true"/>

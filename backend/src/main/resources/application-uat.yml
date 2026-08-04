@@ -1,7 +1,15 @@
 # =============================================================================
 # TICKET-ADV049 — uat profile: PostgreSQL on docker-compose
+# TICKET-ADV151 — Liquibase owns the schema on container startup: the master
+#                 changelog runs before Tomcat accepts traffic, and Hibernate is
+#                 pinned to `validate` so it can never mutate the migrated
+#                 schema behind Liquibase's back.
 # =============================================================================
 spring:
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    drop-first: false
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:reconx}
     username: ${POSTGRES_USER:reconx_user}
@@ -11,9 +19,13 @@ spring:
       maximum-pool-size: 20
       connection-timeout: 5000
   jpa:
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
       hibernate.jdbc.batch_size: 50
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 logging:
   level:

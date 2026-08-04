@@ -15,11 +15,13 @@ spring:
     name: reconx
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  jmx:
+    enabled: true
 
-  # ADV012 — Liquibase classpath wiring (the classic starter bug is missing the
+  # TICKET-ADV012 — Liquibase classpath wiring (the classic starter bug is missing the
   # `classpath:` prefix here, which causes a silent skip on JAR builds).
   liquibase:
-    change-log: classpath:/db/changelog/db.changelog-master.xml
+    change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
 
   jpa:
@@ -32,19 +34,18 @@ spring:
 
   # ADV081-ADV082 — Caffeine cache config; per-cache spec overrides the global one.
   cache:
+    type: caffeine
     cache-names: instruments,counterparties
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=5m
 
   # ADV128 — Kafka producer/consumer defaults. Topics are created at startup
   # by KafkaTopicsConfig (see com.dbtraining.reconx.kafka.KafkaTopicsConfig).
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+        enable.idempotence: true
     consumer:
       group-id: reconx-service
       auto-offset-reset: earliest
@@ -54,6 +55,7 @@ spring:
         spring.json.trusted.packages: com.dbtraining.reconx.dto
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.dbtraining.reconx.dto.TradeEvent
+        max.poll.records: 100
 
 server:
   servlet:
@@ -111,4 +113,4 @@ springdoc:
     tagsSorter: alpha
     operationsSorter: alpha
   api-docs:
-    path: /v3/api-docs
+    path: /v1/api-docs

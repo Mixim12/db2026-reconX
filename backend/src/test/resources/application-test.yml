@@ -1,0 +1,21 @@
+# =============================================================================
+# "test" profile — used by the Testcontainers-backed tests (@ActiveProfiles("test")).
+#
+# Liquibase owns the business schema, but the Envers tables (revinfo, trades_aud)
+# are auto-created by Hibernate rather than by a changeset, exactly as the dev and
+# uat profiles do it. The base profile's `validate` therefore fails against a
+# freshly migrated container with "missing table [revinfo]", so mirror uat here.
+# =============================================================================
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  # No broker runs in the container tests. Without a short block timeout every
+  # publish waits the 60s metadata default before giving up.
+  kafka:
+    producer:
+      properties:
+        max.block.ms: 2000
+    listener:
+      missing-topics-fatal: false

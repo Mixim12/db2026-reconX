@@ -8,6 +8,7 @@
       "type": "timeseries",
       "title": "API request rate by endpoint (ADV087)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
       "targets": [
         { "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)", "legendFormat": "{{uri}}" }
       ],
@@ -15,10 +16,13 @@
     },
     {
       "type": "timeseries",
-      "title": "API P95 latency (ADV088)",
+      "title": "API response time P50/P95/P99 (ADV088)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "targets": [
-        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "{{uri}}" }
+        { "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P50 {{uri}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P95 {{uri}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, uri))", "legendFormat": "P99 {{uri}}" }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
     },
@@ -26,6 +30,21 @@
       "type": "stat",
       "title": "Open recon breaks (ADV091)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "value" },
       "targets": [{ "expr": "recon_break_count" }],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
     },
@@ -33,15 +52,84 @@
       "type": "timeseries",
       "title": "Trades created / sec (ADV089)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))" }],
+      "fieldConfig": { "defaults": { "unit": "trades/s" }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(trade_created_total[1m]))", "legendFormat": "Trades created /s" }],
       "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
     },
     {
-      "type": "timeseries",
+      "type": "heatmap",
       "title": "Reconciliation duration histogram (ADV090)",
       "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
-      "targets": [{ "expr": "sum(rate(reconciliation_duration_seconds_bucket[5m])) by (le)" }],
+      "targets": [{ "expr": "sum(rate(reconciliation_duration_seconds_bucket[5m])) by (le)", "format": "heatmap" }],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+    },
+    {
+      "type": "piechart",
+      "title": "Trades by status (ADV092)",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (status) (trades_by_status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 }
+    },
+    {
+      "type": "row",
+      "title": "Kafka health",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "id": 100
+    },
+    {
+      "type": "timeseries",
+      "title": "Consumer lag by topic",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (topic) (kafka_consumer_records_lag)",
+          "legendFormat": "{{topic}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 17 },
+      "id": 101
+    },
+    {
+      "title": "Throughput: produced vs consumed",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        { "expr": "sum(rate(kafka_consumer_records_consumed_total[1m]))", "legendFormat": "consumed" },
+        { "expr": "sum(rate(kafka_producer_record_send_total[1m]))", "legendFormat": "produced" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 17 },
+      "id": 102
+    },
+    {
+      "title": "DLQ message count",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "reconx-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(kafka_consumer_records_consumed_total{topic=\"trade-events-dlq\"})"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 17 },
+      "id": 103
     }
   ],
   "refresh": "10s",

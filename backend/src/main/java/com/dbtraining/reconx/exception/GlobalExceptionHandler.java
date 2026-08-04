@@ -1,59 +1,126 @@
 package com.dbtraining.reconx.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
+import java.time.Instant;
 import java.util.stream.Collectors;
 
-/**
- * ============================================================================
- * TICKET-ADV062 — RFC 7807 ProblemDetail for every ReconException
- *
- * Maps each domain exception subtype to the right HTTP status, with a
- * structured ProblemDetail body so clients don't have to parse free text.
- * ============================================================================
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(TradeNotFoundException.class)
-    public ProblemDetail notFound(TradeNotFoundException ex) {
-        // TODO(TICKET-ADV062): return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail notFound(TradeNotFoundException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, exception.getMessage());
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/trade-not-found"));
+        problem.setTitle("Trade not found");
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
     }
 
     @ExceptionHandler(DuplicateTradeRefException.class)
-    public ProblemDetail duplicate(DuplicateTradeRefException ex) {
-        // TODO(TICKET-ADV062): map DuplicateTradeRefException -> HttpStatus.CONFLICT (409).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail duplicate(DuplicateTradeRefException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, exception.getMessage());
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/duplicate-trade-ref"));
+        problem.setTitle("Duplicate trade reference");
+        return problem;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail badCredentials(BadCredentialsException exception) {
+        log.warn("Rejected login attempt");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/invalid-credentials"));
+        problem.setTitle("Invalid credentials");
+        return problem;
     }
 
     @ExceptionHandler(InvalidTradeException.class)
-    public ProblemDetail invalid(InvalidTradeException ex) {
-        // TODO(TICKET-ADV062): map InvalidTradeException -> HttpStatus.BAD_REQUEST (400).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail invalid(InvalidTradeException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, exception.getMessage());
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/invalid-trade"));
+        problem.setTitle("Invalid trade");
+        return problem;
     }
 
     @ExceptionHandler(ReconciliationMismatchException.class)
-    public ProblemDetail mismatch(ReconciliationMismatchException ex) {
-        // TODO(TICKET-ADV062): map ReconciliationMismatchException -> HttpStatus.UNPROCESSABLE_ENTITY (422).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail mismatch(ReconciliationMismatchException exception) {
+        ProblemDetail problem = reconciliationProblem(exception);
+        problem.setProperty("reconBreakId", exception.getReconBreakId());
+        return problem;
+    }
+
+    @ExceptionHandler(ReconException.class)
+    public ProblemDetail recon(ReconException exception) {
+        ProblemDetail problem = reconciliationProblem(exception);
+        problem.setProperty("reconBreakId", exception.getReconBreakId());
+        return problem;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail validation(MethodArgumentNotValidException ex) {
-        // TODO(TICKET-ADV062): join field errors ("field: message; ...") and return BAD_REQUEST ProblemDetail.
-        //   Hint: ex.getBindingResult().getFieldErrors().stream().map(...).collect(Collectors.joining("; "))
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail validation(MethodArgumentNotValidException exception) {
+        String detail = exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        problem.setTitle("Validation failed");
+        return problem;
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ProblemDetail constraint(ConstraintViolationException ex) {
-        // TODO(TICKET-ADV062): map ConstraintViolationException -> HttpStatus.BAD_REQUEST (400).
-        throw new UnsupportedOperationException("TICKET-ADV062");
+    public ProblemDetail constraint(ConstraintViolationException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail handleResponseStatus(ResponseStatusException exception) {
+        return ProblemDetail.forStatusAndDetail(exception.getStatusCode(),
+                exception.getReason() != null ? exception.getReason() : exception.getMessage());
+    }
+
+    @ExceptionHandler({org.springframework.security.access.AccessDeniedException.class, AuthorizationDeniedException.class})
+    public ProblemDetail handleAccessDenied(Exception exception) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+            return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Full authentication is required to access this resource");
+        }
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleAny(Exception exception) {
+        log.error("Unhandled exception", exception);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred — please contact support with the correlationId");
+        problem.setTitle("Internal server error");
+        return problem;
+    }
+
+    private static ProblemDetail reconciliationProblem(ReconException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage());
+        problem.setType(URI.create("https://reconx.dbtraining.com/errors/recon-failure"));
+        problem.setTitle("Reconciliation failure");
+        return problem;
     }
 }

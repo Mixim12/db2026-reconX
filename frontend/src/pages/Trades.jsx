@@ -1,33 +1,75 @@
 // TICKET-ADV114 — Compound DataTable.
-// TICKET-ADV117 — useDebouncedSearch.
-import React, { useState } from 'react';
+// TICKET-ADV119 / TICKET-ADV121 — TradeRow memoisation & useCallback handler
+import React, { useState, useEffect, useCallback } from 'react';
 import { withAuth } from '@components/withAuth.jsx';
 import DataTable from '@components/DataTable.jsx';
-import { useDebouncedSearch } from '@hooks/useDebouncedSearch.js';
+import TradeRow from '@components/TradeRow.jsx';
 import { api } from '@services/apiService.js';
 
 function Trades() {
-  const [search, setSearch] = useState('');
-  const debounced = useDebouncedSearch(search, 300);
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
+  const [sort, setSort] = useState(null); // { field, dir }
+  const [selectedId, setSelectedId] = useState(null);
   const [data, setData] = useState({ items: [], totalPages: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // TODO(TICKET-ADV114 + ADV117): useEffect that:
-  //   - builds a query string from `page` and `debounced` (status filter)
-  //   - calls api.listTrades(params) and stores the response in `data`
-  //   - re-runs whenever `page` or `debounced` changes
-  //   - degrades gracefully on error (set empty page).
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    const params = new URLSearchParams({ page: String(page) });
+    if (statusFilter) params.set('status', statusFilter);
+    if (sort) {
+      let backendSort = sort.field;
+      if (sort.field === 'symbol') backendSort = 'instrument';
+      if (sort.field === 'qty') backendSort = 'quantity';
+      params.set('sort', `${backendSort},${sort.dir}`);
+    }
+
+    api.listTrades(`?${params.toString()}`)
+      .then((res) => {
+        setData({ items: res.items ?? [], totalPages: res.totalPages ?? 0 });
+        setError(null);
+      })
+      .catch((err) => {
+        setData({ items: [], totalPages: 0 });
+        setError(err.message || 'Failed to load trades');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [page, statusFilter, sort]);
+
+  // TICKET-ADV121: Reference-stable handler for memoised <TradeRow /> child components
+  const handleSelectTrade = useCallback((id) => {
+    setSelectedId(id);
+  }, []);
 
   return (
     <section>
       <h2>Trades</h2>
-      <input
+      <select
         aria-label="Filter by status"
-        placeholder="status filter (PENDING/MATCHED/…)"
-        value={search}
-        onChange={(e) => setSearch(e.target.value.toUpperCase())}
-      />
-      <DataTable>
+        value={statusFilter}
+        onChange={(e) => {
+          setStatusFilter(e.target.value);
+          setPage(0);
+        }}
+      >
+        <option value="">All Statuses</option>
+        <option value="PENDING">PENDING</option>
+        <option value="MATCHED">MATCHED</option>
+        <option value="UNMATCHED">UNMATCHED</option>
+        <option value="BREAK">BREAK</option>
+        <option value="CANCELLED">CANCELLED</option>
+      </select>
+      
+      {selectedId && <p data-testid="selected-trade">Selected Trade: {selectedId}</p>}
+      
+      {error && <div className="error-fallback" role="alert">{error}</div>}
+      
+      <DataTable sort={sort} onSortChange={setSort}>
         <DataTable.Header columns={[
           { key: 'tradeRef', label: 'Ref' },
           { key: 'symbol',   label: 'Symbol' },
@@ -35,11 +77,16 @@ function Trades() {
           { key: 'price',    label: 'Price' },
           { key: 'status',   label: 'Status' },
         ]} />
-        {/* TODO(TICKET-ADV114): render a DataTable.Body with `rows={data.items}`
-            and a `render` prop that returns one <span> per column. */}
+        <DataTable.Body
+          rows={data.items}
+          render={(t) => (
+            <TradeRow key={t.id || t.tradeRef} trade={t} onClick={handleSelectTrade} />
+          )}
+        />
+        {loading && <div className="loader">Loading...</div>}
         <DataTable.Pagination
           page={page}
-          totalPages={Math.max(1, data.totalPages)}
+          totalPages={data.totalPages}
           onChange={setPage}
         />
       </DataTable>

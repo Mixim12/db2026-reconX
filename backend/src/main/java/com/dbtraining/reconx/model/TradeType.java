@@ -32,26 +32,33 @@ public sealed interface TradeType
         extends Comparable<TradeType>
         permits EquityTrade, FXTrade, BondTrade, DerivativeTrade {
 
-    /** Stable natural key. Drives equals/hashCode. */
+    /** The stable natural key of this trade; drives {@code equals}/{@code hashCode}. */
     TradeRef tradeRef();
 
-    /** Notional value of the trade for reconciliation summaries. */
+    /** The notional value of the trade for reconciliation summaries. */
     Money notional();
 
-    /** Business date the trade was struck on. */
+    /** The business date the trade was struck on. */
     LocalDate tradeDate();
 
-    /** Discriminator for switch expressions and persistence mapping. */
+    /** The discriminator used for switch expressions and persistence mapping. */
     AssetClass assetClass();
 
-    Comparator<TradeType> NATURAL = Comparator
-            .comparing(TradeType::tradeDate).reversed()
-            .thenComparing(t -> t.tradeRef().value());
+    /** The closed set of asset classes a {@link TradeType} can belong to. */
+    enum AssetClass { EQUITY, FX, BOND, DERIVATIVE }
 
+    /** Newest {@link #tradeDate()} first; ties broken by {@link TradeRef#value()} ascending. */
+    Comparator<TradeType> NATURAL = Comparator
+            .comparing(TradeType::tradeDate)
+            .reversed()
+            .thenComparing(trade -> trade.tradeRef().value());
+
+    /**
+     * @param other the trade to compare against
+     * @return the result of comparing this trade to {@code other} under {@link #NATURAL}
+     */
     @Override
     default int compareTo(TradeType other) {
         return NATURAL.compare(this, other);
     }
-
-    enum AssetClass { EQUITY, FX, BOND, DERIVATIVE }
 }
