@@ -29,7 +29,8 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME:   2000
     healthcheck:
-      # TCP probe — the 4-letter-word commands are not whitelisted by default.
+      # `ruok` needs the 4lw allowlist; a plain TCP connect proves the client
+      # port is accepting without touching broker config.
       test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/2181'"]
       interval: 5s
       timeout: 3s
@@ -67,7 +68,11 @@ services:
     networks: [reconx]
 
   backend:
-    build: ./backend
+    build:
+      # Repo root, not ./backend — backend/pom.xml depends on the sibling
+      # recon-audit-starter module, which a backend/-scoped context cannot see.
+      context: .
+      dockerfile: backend/Dockerfile
     image: ghcr.io/sidoncode/reconx-backend:latest
     container_name: reconx-backend
     depends_on:
@@ -101,7 +106,9 @@ services:
       backend: {condition: service_healthy}
     ports: ["5173:80"]
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      # 127.0.0.1, not localhost: nginx listens on IPv4 only, and busybox wget
+      # resolves localhost to ::1 first — which answers with connection refused.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -115,7 +122,7 @@ services:
       - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     ports: ["9090:9090"]
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9090/-/healthy"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9090/-/healthy || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -134,7 +141,7 @@ services:
       - grafana_data:/var/lib/grafana
     ports: ["3000:3000"]
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
