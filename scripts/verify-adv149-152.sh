@@ -165,6 +165,23 @@ done
 section "TICKET-ADV152" "docker compose ps reports (healthy) for every service"
 
 CORE_SERVICES=(postgres zookeeper kafka backend frontend prometheus grafana)
+
+# The services gated behind `depends_on: service_healthy` only start their own
+# check once their dependency is healthy, so give the tail of the chain
+# (frontend) its own window before snapshotting `docker compose ps`.
+STACK_BUDGET=90
+stack_elapsed=0
+while (( stack_elapsed < STACK_BUDGET )); do
+    stack_healthy=true
+    for svc in "${CORE_SERVICES[@]}"; do
+        st=$(docker inspect --format='{{.State.Health.Status}}' "reconx-${svc}" 2>/dev/null || echo "unknown")
+        [[ "$st" == "healthy" ]] || stack_healthy=false
+    done
+    $stack_healthy && break
+    sleep 2
+    stack_elapsed=$((stack_elapsed + 2))
+done
+
 PS_OUTPUT=$($COMPOSE ps 2>&1 || true)
 
 for svc in "${CORE_SERVICES[@]}"; do
@@ -193,9 +210,16 @@ fi
 # =============================================================================
 section "TICKET-ADV149" "Prometheus scrapes reconx-backend via backend:8080 (not localhost)"
 
+# Polls until the backend target has completed its first successful scrape.
+# Reaching the API is not enough: for the first scrape_interval after boot the
+# target is legitimately reported "unknown"/"down".
 fetch_prom_targets() {
     PROM_TARGETS_JSON=$(curl -sf --max-time 5 "$PROM_URL/api/v1/targets") || return 1
-    [[ -n "$PROM_TARGETS_JSON" ]]
+    [[ -n "$PROM_TARGETS_JSON" ]] || return 1
+    echo "$PROM_TARGETS_JSON" \
+        | sed 's/},{/}\n{/g' \
+        | grep '"job":"reconx-backend"' \
+        | grep -q '"health":"up"'
 }
 
 if ! poll_until 60 fetch_prom_targets; then
@@ -235,7 +259,9 @@ fi
 
 fetch_prom_up_query() {
     PROM_QUERY_JSON=$(curl -sf --max-time 5 -G "$PROM_URL/api/v1/query" --data-urlencode 'query=up{job="reconx-backend"}') || return 1
-    [[ -n "$PROM_QUERY_JSON" ]]
+    [[ -n "$PROM_QUERY_JSON" ]] || return 1
+    # Keep polling while the series is absent or still reporting 0.
+    echo "$PROM_QUERY_JSON" | grep -q '"value":\[[^]]*,"1"\]'
 }
 
 if ! poll_until 60 fetch_prom_up_query; then
@@ -332,8 +358,10 @@ if [[ -n "$DASHBOARD_UID" ]]; then
     if [[ -z "${GRAFANA_DASHBOARD_JSON:-}" ]]; then
         fail "could not fetch dashboard detail for uid=$DASHBOARD_UID"
     else
+        # "row" panels are collapsible section headers — they carry no
+        # datasource by design, so they are not part of this check.
         if (( HAVE_JQ )); then
-            BAD_PANELS=$(echo "$GRAFANA_DASHBOARD_JSON" | jq -r '[.dashboard.panels[]? | select(.datasource.uid != "reconx-prometheus")] | length' || true)
+            BAD_PANELS=$(echo "$GRAFANA_DASHBOARD_JSON" | jq -r '[.dashboard.panels[]? | select(.type != "row") | select(.datasource.uid != "reconx-prometheus")] | length' || true)
         else
             TOTAL_DS=$(echo "$GRAFANA_DASHBOARD_JSON" | grep -o '"datasource":{"type":"prometheus","uid":"[^"]*"}' | wc -l | tr -d ' ' || true)
             MATCHING_DS=$(echo "$GRAFANA_DASHBOARD_JSON" | grep -o '"datasource":{"type":"prometheus","uid":"reconx-prometheus"}' | wc -l | tr -d ' ' || true)
@@ -381,7 +409,9 @@ section "TICKET-ADV151" "Liquibase runs before Tomcat; ddl-auto is validate"
 BACKEND_LOGS=$($COMPOSE logs backend 2>&1 || true)
 
 LIQUIBASE_LINE=$(echo "$BACKEND_LOGS" | grep -in "liquibase" | head -1 | cut -d: -f1 || true)
-STARTED_LINE=$(echo "$BACKEND_LOGS" | grep -inE "Started .*Application" | head -1 | cut -d: -f1 || true)
+# "Started ReconxApplication in 6.2 seconds" — anchored on " in " so the
+# earlier "Starting ReconxApplication v1.0.0" banner does not match.
+STARTED_LINE=$(echo "$BACKEND_LOGS" | grep -inE "Started [A-Za-z]*Application in " | head -1 | cut -d: -f1 || true)
 
 if [[ -z "$LIQUIBASE_LINE" ]]; then
     fail "no Liquibase log line found in 'docker compose logs backend'"

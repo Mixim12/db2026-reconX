@@ -69,24 +69,40 @@ class GrafanaProvisioningConfigTest {
                 .containsEntry("path", "/etc/grafana/provisioning/dashboards");
     }
 
+    /**
+     * Every panel that queries data. "row" panels are collapsible section
+     * headers — they carry no datasource and no targets by design.
+     */
+    private List<JsonNode> queryPanels() {
+        List<JsonNode> panels = new ArrayList<>();
+        collectQueryPanels(DeploymentFiles.loadJson(DASHBOARD_JSON).path("panels"), panels);
+        return panels;
+    }
+
+    private void collectQueryPanels(JsonNode container, List<JsonNode> collected) {
+        for (JsonNode panel : container) {
+            if ("row".equals(panel.path("type").asText())) {
+                collectQueryPanels(panel.path("panels"), collected);
+            } else {
+                collected.add(panel);
+            }
+        }
+    }
+
     @Test
     void everyPanelUsesTheProvisionedDatasourceUid() {
         String provisionedUid = (String) prometheusDatasource().get("uid");
-        JsonNode dashboard = DeploymentFiles.loadJson(DASHBOARD_JSON);
 
-        List<String> panelUids = new ArrayList<>();
-        for (JsonNode panel : dashboard.path("panels")) {
-            panelUids.add(panel.path("datasource").path("uid").asText(null));
-        }
+        List<String> panelUids = queryPanels().stream()
+                .map(panel -> panel.path("datasource").path("uid").asText(null))
+                .toList();
 
         assertThat(panelUids).isNotEmpty().allMatch(provisionedUid::equals);
     }
 
     @Test
     void everyPanelHasAQueryToRender() {
-        JsonNode dashboard = DeploymentFiles.loadJson(DASHBOARD_JSON);
-
-        for (JsonNode panel : dashboard.path("panels")) {
+        for (JsonNode panel : queryPanels()) {
             assertThat(panel.path("targets")).as("targets of panel %s", panel.path("title").asText())
                     .isNotEmpty();
             for (JsonNode target : panel.path("targets")) {
