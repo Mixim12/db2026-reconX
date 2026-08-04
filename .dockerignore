@@ -1,0 +1,37 @@
+# ============================================================================
+# TICKET-ADV146 — build-context exclusions for the repo-root backend build
+#
+# backend/Dockerfile builds from the repository root (it needs the sibling
+# recon-audit-starter module), so this file — not backend/.dockerignore — is
+# what BuildKit honours for that build. Keeping the context small is what
+# makes the "second build under 30 s" criterion hold: every excluded path is
+# one less file BuildKit has to hash before it can reuse a cached layer.
+# ============================================================================
+
+# --- build output ----------------------------------------------------------
+target/
+**/target/
+dist/
+**/dist/
+**/node_modules/
+
+# --- VCS, IDE, OS ----------------------------------------------------------
+.git
+.gitignore
+.github
+.idea
+.vscode
+**/*.iml
+.DS_Store
+
+# --- not needed to compile or run the backend ------------------------------
+frontend/
+static-dashboard/
+student-guides/
+docs/
+scripts/
+monitoring/
+db/
+docker-compose.yml
+**/*.md
+**/*.log

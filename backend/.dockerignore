@@ -1,6 +1,9 @@
+# TICKET-ADV146 — exclusions for a backend/-scoped build context.
+# The image itself is built from the repo root (see backend/Dockerfile), where
+# the root .dockerignore applies; this file keeps the backend subtree clean for
+# any tooling that does scope a context here.
 target/
 .git/
 .idea/
 *.iml
 *.log
-.mvn/wrapper/maven-wrapper.jar
