@@ -11,9 +11,20 @@ const schema = yup.object({
     .string()
     .required('Trade ref is required')
     .matches(/^[A-Z]{3}-\d{8}-\d{4}$/, 'Trade ref must match AAA-YYYYMMDD-NNNN'),
-  instrument: yup
-    .string()
+  instrumentId: yup
+    .number()
+    .typeError('Instrument is required')
     .required('Instrument is required'),
+  counterpartyId: yup
+    .number()
+    .typeError('Counterparty is required')
+    .required('Counterparty is required'),
+  assetClass: yup
+    .string()
+    .required('Asset class is required'),
+  side: yup
+    .string()
+    .required('Side is required'),
   quantity: yup
     .number()
     .typeError('Quantity must be a number')
@@ -40,7 +51,10 @@ function AddTrade() {
     mode: 'onBlur',
     defaultValues: {
       tradeRef: '',
-      instrument: '',
+      instrumentId: '',
+      counterpartyId: '',
+      assetClass: '',
+      side: '',
       quantity: '',
       price: '',
       tradeDate: '',
@@ -56,6 +70,8 @@ function AddTrade() {
     try {
       const payload = {
         ...values,
+        instrumentId: Number(values.instrumentId),
+        counterpartyId: Number(values.counterpartyId),
         quantity: Number(values.quantity),
         price: Number(values.price),
       };
@@ -89,15 +105,76 @@ function AddTrade() {
 
         <label>
           Instrument
-          <input
-            {...register('instrument')}
-            placeholder="SAP.DE or AAPL"
-            aria-invalid={Boolean(errors.instrument)}
-          />
+          <select
+            {...register('instrumentId')}
+            aria-invalid={Boolean(errors.instrumentId)}
+          >
+            <option value="">Select Instrument...</option>
+            <option value="1">SAP.DE (SAP SE)</option>
+            <option value="2">SIE.DE (Siemens AG)</option>
+            <option value="3">DBKGn.DE (Deutsche Bank AG)</option>
+            <option value="4">AAPL (Apple Inc)</option>
+            <option value="5">MSFT (Microsoft Corp)</option>
+          </select>
         </label>
-        {errors.instrument && (
+        {errors.instrumentId && (
           <p className="form-error" role="alert">
-            {errors.instrument.message}
+            {errors.instrumentId.message}
+          </p>
+        )}
+
+        <label>
+          Counterparty
+          <select
+            {...register('counterpartyId')}
+            aria-invalid={Boolean(errors.counterpartyId)}
+          >
+            <option value="">Select Counterparty...</option>
+            <option value="1">Goldman Sachs International</option>
+            <option value="2">JP Morgan Chase Bank</option>
+            <option value="3">Morgan Stanley &amp; Co</option>
+            <option value="4">Barclays Capital</option>
+            <option value="5">Credit Suisse AG</option>
+          </select>
+        </label>
+        {errors.counterpartyId && (
+          <p className="form-error" role="alert">
+            {errors.counterpartyId.message}
+          </p>
+        )}
+
+        <label>
+          Asset Class
+          <select
+            {...register('assetClass')}
+            aria-invalid={Boolean(errors.assetClass)}
+          >
+            <option value="">Select Asset Class...</option>
+            <option value="EQUITY">EQUITY</option>
+            <option value="FIXED_INCOME">FIXED_INCOME</option>
+            <option value="FX">FX</option>
+          </select>
+        </label>
+        {errors.assetClass && (
+          <p className="form-error" role="alert">
+            {errors.assetClass.message}
+          </p>
+        )}
+
+        <label>
+          Side
+          <select
+            {...register('side')}
+            aria-invalid={Boolean(errors.side)}
+          >
+            <option value="">Select Side...</option>
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </label>
+        {errors.side && (
+          <p className="form-error" role="alert">
+            {errors.side.message}
           </p>
         )}
 

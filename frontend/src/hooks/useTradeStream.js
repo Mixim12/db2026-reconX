@@ -8,7 +8,14 @@ export function useTradeStream(url = '/api/v1/trades/stream') {
   const [isConnected, setConnected] = useState(false);
 
   useEffect(() => {
-    const sse = new EventSource(url);
+    let finalUrl = url;
+    if (typeof sessionStorage !== 'undefined') {
+      const token = sessionStorage.getItem('reconx-token');
+      if (token) {
+        finalUrl += (finalUrl.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+      }
+    }
+    const sse = new EventSource(finalUrl);
 
     sse.onopen = () => setConnected(true);
 

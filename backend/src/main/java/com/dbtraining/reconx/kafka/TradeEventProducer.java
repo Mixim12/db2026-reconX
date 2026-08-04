@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * ============================================================================
@@ -39,9 +40,11 @@ public class TradeEventProducer {
     private static final String TOPIC = "trade-events";
 
     private final KafkaTemplate<String, TradeEvent> template;
+    private final ApplicationEventPublisher publisher;
 
-    public TradeEventProducer(KafkaTemplate<String, TradeEvent> template) {
+    public TradeEventProducer(KafkaTemplate<String, TradeEvent> template, ApplicationEventPublisher publisher) {
         this.template = template;
+        this.publisher = publisher;
     }
 
     /**
@@ -65,5 +68,8 @@ public class TradeEventProducer {
             log.warn("Failed to publish TradeEvent eventId={} ref={} type={}",
                       event.eventId(), event.tradeRef(), event.eventType(), ex);
         }
+        
+        // Also broadcast the event locally for SSE
+        publisher.publishEvent(event);
     }
 }
